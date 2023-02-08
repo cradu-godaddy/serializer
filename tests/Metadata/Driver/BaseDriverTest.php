@@ -1,11 +1,8 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Metadata\Driver;
 
-use JMS\Serializer\Exception\InvalidMetadataException;
-use JMS\Serializer\Expression\ExpressionEvaluator;
+use JMS\Serializer\GraphNavigator;
 use JMS\Serializer\Metadata\ClassMetadata;
 use JMS\Serializer\Metadata\ExpressionPropertyMetadata;
 use JMS\Serializer\Metadata\PropertyMetadata;
@@ -16,235 +13,180 @@ use JMS\Serializer\Tests\Fixtures\Discriminator\ObjectWithXmlNamespaceAttributeD
 use JMS\Serializer\Tests\Fixtures\Discriminator\ObjectWithXmlNamespaceAttributeDiscriminatorParent;
 use JMS\Serializer\Tests\Fixtures\Discriminator\ObjectWithXmlNamespaceDiscriminatorChild;
 use JMS\Serializer\Tests\Fixtures\Discriminator\ObjectWithXmlNamespaceDiscriminatorParent;
-use JMS\Serializer\Tests\Fixtures\FirstClassListCollection;
-use JMS\Serializer\Tests\Fixtures\FirstClassMapCollection;
-use JMS\Serializer\Tests\Fixtures\ObjectWithExpressionVirtualPropertiesAndExcludeAll;
-use JMS\Serializer\Tests\Fixtures\ObjectWithInvalidExpression;
-use JMS\Serializer\Tests\Fixtures\ObjectWithOnlyLifecycleCallbacks;
-use JMS\Serializer\Tests\Fixtures\ObjectWithVirtualPropertiesAndDuplicatePropName;
-use JMS\Serializer\Tests\Fixtures\ObjectWithVirtualPropertiesAndDuplicatePropNameExcludeAll;
-use JMS\Serializer\Tests\Fixtures\ObjectWithVirtualPropertiesAndExcludeAll;
 use JMS\Serializer\Tests\Fixtures\ParentSkipWithEmptyChild;
-use JMS\Serializer\Tests\Fixtures\Person;
 use Metadata\Driver\DriverInterface;
-use Metadata\MethodMetadata;
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\ExpressionLanguage\ExpressionFunction;
-use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
-abstract class BaseDriverTest extends TestCase
+abstract class BaseDriverTest extends \PHPUnit_Framework_TestCase
 {
     public function testLoadBlogPostMetadata()
     {
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\BlogPost'));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertNotNull($m);
-        self::assertEquals('blog-post', $m->xmlRootName);
-        self::assertCount(4, $m->xmlNamespaces);
-        self::assertArrayHasKey('', $m->xmlNamespaces);
-        self::assertEquals('http://example.com/namespace', $m->xmlNamespaces['']);
-        self::assertArrayHasKey('gd', $m->xmlNamespaces);
-        self::assertEquals('http://schemas.google.com/g/2005', $m->xmlNamespaces['gd']);
-        self::assertArrayHasKey('atom', $m->xmlNamespaces);
-        self::assertEquals('http://www.w3.org/2005/Atom', $m->xmlNamespaces['atom']);
-        self::assertArrayHasKey('dc', $m->xmlNamespaces);
-        self::assertEquals('http://purl.org/dc/elements/1.1/', $m->xmlNamespaces['dc']);
-
-        self::assertFalse($m->isList);
-        self::assertFalse($m->isMap);
+        $this->assertNotNull($m);
+        $this->assertEquals('blog-post', $m->xmlRootName);
+        $this->assertCount(4, $m->xmlNamespaces);
+        $this->assertArrayHasKey('', $m->xmlNamespaces);
+        $this->assertEquals('http://example.com/namespace', $m->xmlNamespaces['']);
+        $this->assertArrayHasKey('gd', $m->xmlNamespaces);
+        $this->assertEquals('http://schemas.google.com/g/2005', $m->xmlNamespaces['gd']);
+        $this->assertArrayHasKey('atom', $m->xmlNamespaces);
+        $this->assertEquals('http://www.w3.org/2005/Atom', $m->xmlNamespaces['atom']);
+        $this->assertArrayHasKey('dc', $m->xmlNamespaces);
+        $this->assertEquals('http://purl.org/dc/elements/1.1/', $m->xmlNamespaces['dc']);
 
         $p = new PropertyMetadata($m->name, 'id');
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->groups = ['comments', 'post'];
-        $p->serializedName = 'id';
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->groups = array("comments", "post");
         $p->xmlElementCData = false;
-        self::assertEquals($p, $m->propertyMetadata['id']);
+        $this->assertEquals($p, $m->propertyMetadata['id']);
 
         $p = new PropertyMetadata($m->name, 'title');
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->serializedName = 'title';
-        $p->groups = ['comments', 'post'];
-        $p->xmlNamespace = 'http://purl.org/dc/elements/1.1/';
-        self::assertEquals($p, $m->propertyMetadata['title']);
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->groups = array("comments", "post");
+        $p->xmlNamespace = "http://purl.org/dc/elements/1.1/";
+        $this->assertEquals($p, $m->propertyMetadata['title']);
 
         $p = new PropertyMetadata($m->name, 'createdAt');
-        $p->type = ['name' => 'DateTime', 'params' => []];
-        $p->serializedName = 'createdAt';
+        $p->type = array('name' => 'DateTime', 'params' => array());
         $p->xmlAttribute = true;
-        self::assertEquals($p, $m->propertyMetadata['createdAt']);
+        $this->assertEquals($p, $m->propertyMetadata['createdAt']);
 
         $p = new PropertyMetadata($m->name, 'published');
-        $p->serializedName = 'published';
-        $p->type = ['name' => 'boolean', 'params' => []];
+        $p->type = array('name' => 'boolean', 'params' => array());
         $p->serializedName = 'is_published';
         $p->xmlAttribute = true;
-        $p->groups = ['post'];
-        self::assertEquals($p, $m->propertyMetadata['published']);
+        $p->groups = array("post");
+        $this->assertEquals($p, $m->propertyMetadata['published']);
 
         $p = new PropertyMetadata($m->name, 'etag');
-        $p->serializedName = 'etag';
-        $p->type = ['name' => 'string', 'params' => []];
+        $p->type = array('name' => 'string', 'params' => array());
         $p->xmlAttribute = true;
-        $p->groups = ['post'];
-        $p->xmlNamespace = 'http://schemas.google.com/g/2005';
-        self::assertEquals($p, $m->propertyMetadata['etag']);
+        $p->groups = array("post");
+        $p->xmlNamespace = "http://schemas.google.com/g/2005";
+        $this->assertEquals($p, $m->propertyMetadata['etag']);
 
         $p = new PropertyMetadata($m->name, 'comments');
-        $p->serializedName = 'comments';
-        $p->type = ['name' => 'ArrayCollection', 'params' => [['name' => 'JMS\Serializer\Tests\Fixtures\Comment', 'params' => []]]];
+        $p->type = array('name' => 'ArrayCollection', 'params' => array(array('name' => 'JMS\Serializer\Tests\Fixtures\Comment', 'params' => array())));
         $p->xmlCollection = true;
         $p->xmlCollectionInline = true;
         $p->xmlEntryName = 'comment';
-        $p->groups = ['comments'];
-        self::assertEquals($p, $m->propertyMetadata['comments']);
+        $p->groups = array("comments");
+        $this->assertEquals($p, $m->propertyMetadata['comments']);
 
         $p = new PropertyMetadata($m->name, 'author');
-        $p->serializedName = 'author';
-        $p->type = ['name' => 'JMS\Serializer\Tests\Fixtures\Author', 'params' => []];
-        $p->groups = ['post'];
+        $p->type = array('name' => 'JMS\Serializer\Tests\Fixtures\Author', 'params' => array());
+        $p->groups = array("post");
         $p->xmlNamespace = 'http://www.w3.org/2005/Atom';
-        self::assertEquals($p, $m->propertyMetadata['author']);
+        $this->assertEquals($p, $m->propertyMetadata['author']);
 
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\Price'));
-        self::assertNotNull($m);
+        $this->assertNotNull($m);
 
         $p = new PropertyMetadata($m->name, 'price');
-        $p->serializedName = 'price';
-        $p->type = ['name' => 'float', 'params' => []];
+        $p->type = array('name' => 'float', 'params' => array());
         $p->xmlValue = true;
-        self::assertEquals($p, $m->propertyMetadata['price']);
+        $this->assertEquals($p, $m->propertyMetadata['price']);
     }
 
     public function testXMLListAbsentNode()
     {
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\ObjectWithAbsentXmlListNode'));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertArrayHasKey('absent', $m->propertyMetadata);
-        self::assertArrayHasKey('present', $m->propertyMetadata);
-        self::assertArrayHasKey('skipDefault', $m->propertyMetadata);
+        $this->assertArrayHasKey('absent', $m->propertyMetadata);
+        $this->assertArrayHasKey('present', $m->propertyMetadata);
+        $this->assertArrayHasKey('skipDefault', $m->propertyMetadata);
 
-        self::assertTrue($m->propertyMetadata['absent']->xmlCollectionSkipWhenEmpty);
-        self::assertTrue($m->propertyMetadata['skipDefault']->xmlCollectionSkipWhenEmpty);
-        self::assertFalse($m->propertyMetadata['present']->xmlCollectionSkipWhenEmpty);
+        $this->assertTrue($m->propertyMetadata['absent']->xmlCollectionSkipWhenEmpty);
+        $this->assertTrue($m->propertyMetadata['skipDefault']->xmlCollectionSkipWhenEmpty);
+        $this->assertFalse($m->propertyMetadata['present']->xmlCollectionSkipWhenEmpty);
     }
 
     public function testVirtualProperty()
     {
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\ObjectWithVirtualProperties'));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertArrayHasKey('existField', $m->propertyMetadata);
-        self::assertArrayHasKey('virtualValue', $m->propertyMetadata);
-        self::assertArrayHasKey('virtualSerializedValue', $m->propertyMetadata);
-        self::assertArrayHasKey('typedVirtualProperty', $m->propertyMetadata);
+        $this->assertArrayHasKey('existField', $m->propertyMetadata);
+        $this->assertArrayHasKey('virtualValue', $m->propertyMetadata);
+        $this->assertArrayHasKey('virtualSerializedValue', $m->propertyMetadata);
+        $this->assertArrayHasKey('typedVirtualProperty', $m->propertyMetadata);
 
-        self::assertEquals($m->propertyMetadata['virtualSerializedValue']->serializedName, 'test', 'Serialized name is missing');
+        $this->assertEquals($m->propertyMetadata['virtualSerializedValue']->serializedName, 'test', 'Serialized name is missing');
 
         $p = new VirtualPropertyMetadata($m->name, 'virtualValue');
         $p->getter = 'getVirtualValue';
-        $p->serializedName = 'virtualValue';
 
-        self::assertEquals($p, $m->propertyMetadata['virtualValue']);
-    }
-
-    public function testFirstClassListCollection()
-    {
-        $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass(FirstClassListCollection::class));
-        \assert($m instanceof ClassMetadata);
-        self::assertTrue($m->isList);
-        self::assertFalse($m->isMap);
-    }
-
-    public function testFirstClassMapCollection()
-    {
-        $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass(FirstClassMapCollection::class));
-        \assert($m instanceof ClassMetadata);
-        self::assertFalse($m->isList);
-        self::assertTrue($m->isMap);
+        $this->assertEquals($p, $m->propertyMetadata['virtualValue']);
     }
 
     public function testXmlKeyValuePairs()
     {
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\ObjectWithXmlKeyValuePairs'));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertArrayHasKey('array', $m->propertyMetadata);
-        self::assertTrue($m->propertyMetadata['array']->xmlKeyValuePairs);
-    }
-
-    public function testInvalidExpression()
-    {
-        $this->expectException(InvalidMetadataException::class);
-
-        $a = new ObjectWithInvalidExpression();
-        $this->getDriver()->loadMetadataForClass(new \ReflectionClass($a));
+        $this->assertArrayHasKey('array', $m->propertyMetadata);
+        $this->assertTrue($m->propertyMetadata['array']->xmlKeyValuePairs);
     }
 
     public function testExpressionVirtualPropertyWithExcludeAll()
     {
-        $a = new ObjectWithExpressionVirtualPropertiesAndExcludeAll();
-        $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass($a));
+        $a = new \JMS\Serializer\Tests\Fixtures\ObjectWithExpressionVirtualPropertiesAndExcludeAll();
+        $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass($a));;
 
-        self::assertArrayHasKey('virtualValue', $m->propertyMetadata);
+        $this->assertArrayHasKey('virtualValue', $m->propertyMetadata);
 
         $p = new ExpressionPropertyMetadata($m->name, 'virtualValue', 'object.getVirtualValue()');
-        $p->serializedName = 'virtualValue';
-        self::assertEquals($p, $m->propertyMetadata['virtualValue']);
+        $this->assertEquals($p, $m->propertyMetadata['virtualValue']);
     }
 
     public function testVirtualPropertyWithExcludeAll()
     {
-        $a = new ObjectWithVirtualPropertiesAndExcludeAll();
+        $a = new \JMS\Serializer\Tests\Fixtures\ObjectWithVirtualPropertiesAndExcludeAll();
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass($a));
 
-        self::assertArrayHasKey('virtualValue', $m->propertyMetadata);
+        $this->assertArrayHasKey('virtualValue', $m->propertyMetadata);
 
         $p = new VirtualPropertyMetadata($m->name, 'virtualValue');
         $p->getter = 'getVirtualValue';
-        $p->serializedName = 'virtualValue';
 
-        self::assertEquals($p, $m->propertyMetadata['virtualValue']);
+        $this->assertEquals($p, $m->propertyMetadata['virtualValue']);
     }
 
     public function testReadOnlyDefinedBeforeGetterAndSetter()
     {
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\AuthorReadOnly'));
 
-        self::assertNotNull($m);
+        $this->assertNotNull($m);
     }
 
     public function testExpressionVirtualProperty()
     {
+        /** @var $m ClassMetadata */
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\AuthorExpressionAccess'));
-        \assert($m instanceof ClassMetadata);
 
         $keys = array_keys($m->propertyMetadata);
-        self::assertEquals(['firstName', 'lastName', 'id'], $keys);
+        $this->assertEquals(['firstName', 'lastName', 'id'], $keys);
     }
 
     public function testLoadDiscriminator()
     {
+        /** @var $m ClassMetadata */
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\Discriminator\Vehicle'));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertNotNull($m);
-        self::assertEquals('type', $m->discriminatorFieldName);
-        self::assertEquals($m->name, $m->discriminatorBaseClass);
-        self::assertEquals(
-            [
+        $this->assertNotNull($m);
+        $this->assertEquals('type', $m->discriminatorFieldName);
+        $this->assertEquals($m->name, $m->discriminatorBaseClass);
+        $this->assertEquals(
+            array(
                 'car' => 'JMS\Serializer\Tests\Fixtures\Discriminator\Car',
                 'moped' => 'JMS\Serializer\Tests\Fixtures\Discriminator\Moped',
-            ],
+            ),
             $m->discriminatorMap
         );
     }
 
     public function testLoadDiscriminatorWhenParentIsInDiscriminatorMap()
     {
+        /** @var ClassMetadata $m */
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\Discriminator\Post'));
-        \assert($m instanceof ClassMetadata);
 
         self::assertNotNull($m);
         self::assertEquals('type', $m->discriminatorFieldName);
@@ -260,115 +202,106 @@ abstract class BaseDriverTest extends TestCase
 
     public function testLoadXmlDiscriminator()
     {
+        /** @var $m ClassMetadata */
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass(ObjectWithXmlAttributeDiscriminatorParent::class));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertNotNull($m);
-        self::assertEquals('type', $m->discriminatorFieldName);
-        self::assertEquals($m->name, $m->discriminatorBaseClass);
-        self::assertEquals(
-            [
+        $this->assertNotNull($m);
+        $this->assertEquals('type', $m->discriminatorFieldName);
+        $this->assertEquals($m->name, $m->discriminatorBaseClass);
+        $this->assertEquals(
+            array(
                 'child' => ObjectWithXmlAttributeDiscriminatorChild::class,
-            ],
+            ),
             $m->discriminatorMap
         );
-        self::assertTrue($m->xmlDiscriminatorAttribute);
-        self::assertFalse($m->xmlDiscriminatorCData);
+        $this->assertTrue($m->xmlDiscriminatorAttribute);
+        $this->assertFalse($m->xmlDiscriminatorCData);
     }
 
     public function testLoadXmlDiscriminatorWithNamespaces()
     {
+        /** @var $m ClassMetadata */
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass(ObjectWithXmlNamespaceDiscriminatorParent::class));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertNotNull($m);
-        self::assertEquals('type', $m->discriminatorFieldName);
-        self::assertEquals($m->name, $m->discriminatorBaseClass);
-        self::assertEquals(
-            [
+        $this->assertNotNull($m);
+        $this->assertEquals('type', $m->discriminatorFieldName);
+        $this->assertEquals($m->name, $m->discriminatorBaseClass);
+        $this->assertEquals(
+            array(
                 'child' => ObjectWithXmlNamespaceDiscriminatorChild::class,
-            ],
+            ),
             $m->discriminatorMap
         );
-        self::assertEquals('http://example.com/', $m->xmlDiscriminatorNamespace);
-        self::assertFalse($m->xmlDiscriminatorAttribute);
-    }
-
-    public function testCanDefineMetadataForInternalClass()
-    {
-        $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass(\PDOStatement::class));
-        \assert($m instanceof ClassMetadata);
-
-        self::assertNotNull($m);
-        self::assertSame('int', $m->propertyMetadata['queryString']->type['name']);
-
-        self::assertCount(1, $m->fileResources);
+        $this->assertEquals('http://example.com/', $m->xmlDiscriminatorNamespace);
+        $this->assertFalse($m->xmlDiscriminatorAttribute);
     }
 
     public function testLoadXmlDiscriminatorWithAttributeNamespaces()
     {
+        /** @var $m ClassMetadata */
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass(ObjectWithXmlNamespaceAttributeDiscriminatorParent::class));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertNotNull($m);
-        self::assertEquals('type', $m->discriminatorFieldName);
-        self::assertEquals($m->name, $m->discriminatorBaseClass);
-        self::assertEquals(
-            [
+        $this->assertNotNull($m);
+        $this->assertEquals('type', $m->discriminatorFieldName);
+        $this->assertEquals($m->name, $m->discriminatorBaseClass);
+        $this->assertEquals(
+            array(
                 'child' => ObjectWithXmlNamespaceAttributeDiscriminatorChild::class,
-            ],
+            ),
             $m->discriminatorMap
         );
-        self::assertEquals('http://example.com/', $m->xmlDiscriminatorNamespace);
-        self::assertTrue($m->xmlDiscriminatorAttribute);
+        $this->assertEquals('http://example.com/', $m->xmlDiscriminatorNamespace);
+        $this->assertTrue($m->xmlDiscriminatorAttribute);
     }
 
     public function testLoadDiscriminatorWithGroup()
     {
+        /** @var $m ClassMetadata */
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\DiscriminatorGroup\Vehicle'));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertNotNull($m);
-        self::assertEquals('type', $m->discriminatorFieldName);
-        self::assertEquals(['foo'], $m->discriminatorGroups);
-        self::assertEquals($m->name, $m->discriminatorBaseClass);
-        self::assertEquals(
-            ['car' => 'JMS\Serializer\Tests\Fixtures\DiscriminatorGroup\Car'],
+        $this->assertNotNull($m);
+        $this->assertEquals('type', $m->discriminatorFieldName);
+        $this->assertEquals(array('foo'), $m->discriminatorGroups);
+        $this->assertEquals($m->name, $m->discriminatorBaseClass);
+        $this->assertEquals(
+            array(
+                'car' => 'JMS\Serializer\Tests\Fixtures\DiscriminatorGroup\Car'
+            ),
             $m->discriminatorMap
         );
     }
 
     public function testSkipWhenEmptyOption()
     {
+        /** @var $m ClassMetadata */
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass(ParentSkipWithEmptyChild::class));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertNotNull($m);
+        $this->assertNotNull($m);
 
-        self::assertInstanceOf(PropertyMetadata::class, $m->propertyMetadata['c']);
-        self::assertInstanceOf(PropertyMetadata::class, $m->propertyMetadata['d']);
-        self::assertInstanceOf(PropertyMetadata::class, $m->propertyMetadata['child']);
-        self::assertFalse($m->propertyMetadata['c']->skipWhenEmpty);
-        self::assertFalse($m->propertyMetadata['d']->skipWhenEmpty);
-        self::assertTrue($m->propertyMetadata['child']->skipWhenEmpty);
+        $this->assertInstanceOf(PropertyMetadata::class, $m->propertyMetadata['c']);
+        $this->assertInstanceOf(PropertyMetadata::class, $m->propertyMetadata['d']);
+        $this->assertInstanceOf(PropertyMetadata::class, $m->propertyMetadata['child']);
+        $this->assertFalse($m->propertyMetadata['c']->skipWhenEmpty);
+        $this->assertFalse($m->propertyMetadata['d']->skipWhenEmpty);
+        $this->assertTrue($m->propertyMetadata['child']->skipWhenEmpty);
     }
 
     public function testLoadDiscriminatorSubClass()
     {
+        /** @var $m ClassMetadata */
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\Discriminator\Car'));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertNotNull($m);
-        self::assertNull($m->discriminatorValue);
-        self::assertNull($m->discriminatorBaseClass);
-        self::assertNull($m->discriminatorFieldName);
-        self::assertEquals([], $m->discriminatorMap);
+        $this->assertNotNull($m);
+        $this->assertNull($m->discriminatorValue);
+        $this->assertNull($m->discriminatorBaseClass);
+        $this->assertNull($m->discriminatorFieldName);
+        $this->assertEquals(array(), $m->discriminatorMap);
     }
 
     public function testLoadDiscriminatorSubClassWhenParentIsInDiscriminatorMap()
     {
+        /** @var ClassMetadata $m */
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\Discriminator\ImagePost'));
-        \assert($m instanceof ClassMetadata);
 
         self::assertNotNull($m);
         self::assertNull($m->discriminatorValue);
@@ -380,173 +313,152 @@ abstract class BaseDriverTest extends TestCase
     public function testLoadXmlObjectWithNamespacesMetadata()
     {
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\ObjectWithXmlNamespaces'));
-        \assert($m instanceof ClassMetadata);
-        self::assertNotNull($m);
-        self::assertEquals('test-object', $m->xmlRootName);
-        self::assertEquals('ex', $m->xmlRootPrefix);
-        self::assertEquals('http://example.com/namespace', $m->xmlRootNamespace);
-        self::assertCount(3, $m->xmlNamespaces);
-        self::assertArrayHasKey('', $m->xmlNamespaces);
-        self::assertEquals('http://example.com/namespace', $m->xmlNamespaces['']);
-        self::assertArrayHasKey('gd', $m->xmlNamespaces);
-        self::assertEquals('http://schemas.google.com/g/2005', $m->xmlNamespaces['gd']);
-        self::assertArrayHasKey('atom', $m->xmlNamespaces);
-        self::assertEquals('http://www.w3.org/2005/Atom', $m->xmlNamespaces['atom']);
+        $this->assertNotNull($m);
+        $this->assertEquals('test-object', $m->xmlRootName);
+        $this->assertEquals('http://example.com/namespace', $m->xmlRootNamespace);
+        $this->assertCount(3, $m->xmlNamespaces);
+        $this->assertArrayHasKey('', $m->xmlNamespaces);
+        $this->assertEquals('http://example.com/namespace', $m->xmlNamespaces['']);
+        $this->assertArrayHasKey('gd', $m->xmlNamespaces);
+        $this->assertEquals('http://schemas.google.com/g/2005', $m->xmlNamespaces['gd']);
+        $this->assertArrayHasKey('atom', $m->xmlNamespaces);
+        $this->assertEquals('http://www.w3.org/2005/Atom', $m->xmlNamespaces['atom']);
 
         $p = new PropertyMetadata($m->name, 'title');
-        $p->serializedName = 'title';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->xmlNamespace = 'http://purl.org/dc/elements/1.1/';
-        self::assertEquals($p, $m->propertyMetadata['title']);
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->xmlNamespace = "http://purl.org/dc/elements/1.1/";
+        $this->assertEquals($p, $m->propertyMetadata['title']);
 
         $p = new PropertyMetadata($m->name, 'createdAt');
-        $p->serializedName = 'createdAt';
-        $p->type = ['name' => 'DateTime', 'params' => []];
+        $p->type = array('name' => 'DateTime', 'params' => array());
         $p->xmlAttribute = true;
-        self::assertEquals($p, $m->propertyMetadata['createdAt']);
+        $this->assertEquals($p, $m->propertyMetadata['createdAt']);
 
         $p = new PropertyMetadata($m->name, 'etag');
-        $p->serializedName = 'etag';
-        $p->type = ['name' => 'string', 'params' => []];
+        $p->type = array('name' => 'string', 'params' => array());
         $p->xmlAttribute = true;
-        $p->xmlNamespace = 'http://schemas.google.com/g/2005';
-        self::assertEquals($p, $m->propertyMetadata['etag']);
+        $p->xmlNamespace = "http://schemas.google.com/g/2005";
+        $this->assertEquals($p, $m->propertyMetadata['etag']);
 
         $p = new PropertyMetadata($m->name, 'author');
-        $p->serializedName = 'author';
-        $p->type = ['name' => 'string', 'params' => []];
+        $p->type = array('name' => 'string', 'params' => array());
         $p->xmlAttribute = false;
-        $p->xmlNamespace = 'http://www.w3.org/2005/Atom';
-        self::assertEquals($p, $m->propertyMetadata['author']);
+        $p->xmlNamespace = "http://www.w3.org/2005/Atom";
+        $this->assertEquals($p, $m->propertyMetadata['author']);
 
         $p = new PropertyMetadata($m->name, 'language');
-        $p->serializedName = 'language';
-        $p->type = ['name' => 'string', 'params' => []];
+        $p->type = array('name' => 'string', 'params' => array());
         $p->xmlAttribute = true;
-        $p->xmlNamespace = 'http://purl.org/dc/elements/1.1/';
-        self::assertEquals($p, $m->propertyMetadata['language']);
+        $p->xmlNamespace = "http://purl.org/dc/elements/1.1/";
+        $this->assertEquals($p, $m->propertyMetadata['language']);
     }
 
     public function testMaxDepth()
     {
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\Node'));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertEquals(2, $m->propertyMetadata['children']->maxDepth);
+        $this->assertEquals(2, $m->propertyMetadata['children']->maxDepth);
     }
 
     public function testPersonCData()
     {
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\Person'));
-        \assert($m instanceof ClassMetadata);
 
-        self::assertNotNull($m);
-        self::assertFalse($m->propertyMetadata['name']->xmlElementCData);
+        $this->assertNotNull($m);
+        $this->assertFalse($m->propertyMetadata['name']->xmlElementCData);
     }
 
     public function testXmlNamespaceInheritanceMetadata()
     {
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\SimpleClassObject'));
-        \assert($m instanceof ClassMetadata);
-        self::assertNotNull($m);
-        self::assertCount(3, $m->xmlNamespaces);
-        self::assertArrayHasKey('old_foo', $m->xmlNamespaces);
-        self::assertEquals('http://old.foo.example.org', $m->xmlNamespaces['old_foo']);
-        self::assertArrayHasKey('foo', $m->xmlNamespaces);
-        self::assertEquals('http://foo.example.org', $m->xmlNamespaces['foo']);
-        self::assertArrayHasKey('new_foo', $m->xmlNamespaces);
-        self::assertEquals('http://new.foo.example.org', $m->xmlNamespaces['new_foo']);
-        self::assertCount(3, $m->propertyMetadata);
+        $this->assertNotNull($m);
+        $this->assertCount(3, $m->xmlNamespaces);
+        $this->assertArrayHasKey('old_foo', $m->xmlNamespaces);
+        $this->assertEquals('http://old.foo.example.org', $m->xmlNamespaces['old_foo']);
+        $this->assertArrayHasKey('foo', $m->xmlNamespaces);
+        $this->assertEquals('http://foo.example.org', $m->xmlNamespaces['foo']);
+        $this->assertArrayHasKey('new_foo', $m->xmlNamespaces);
+        $this->assertEquals('http://new.foo.example.org', $m->xmlNamespaces['new_foo']);
+        $this->assertCount(3, $m->propertyMetadata);
 
         $p = new PropertyMetadata($m->name, 'foo');
-        $p->serializedName = 'foo';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->xmlNamespace = 'http://old.foo.example.org';
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->xmlNamespace = "http://old.foo.example.org";
         $p->xmlAttribute = true;
-        self::assertEquals($p, $m->propertyMetadata['foo']);
+        $this->assertEquals($p, $m->propertyMetadata['foo']);
 
         $p = new PropertyMetadata($m->name, 'bar');
-        $p->serializedName = 'bar';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->xmlNamespace = 'http://foo.example.org';
-        self::assertEquals($p, $m->propertyMetadata['bar']);
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->xmlNamespace = "http://foo.example.org";
+        $this->assertEquals($p, $m->propertyMetadata['bar']);
 
         $p = new PropertyMetadata($m->name, 'moo');
-        $p->serializedName = 'moo';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->xmlNamespace = 'http://new.foo.example.org';
-        self::assertEquals($p, $m->propertyMetadata['moo']);
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->xmlNamespace = "http://new.foo.example.org";
+        $this->assertEquals($p, $m->propertyMetadata['moo']);
+
 
         $subm = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\SimpleSubClassObject'));
-        \assert($subm instanceof ClassMetadata);
-        self::assertNotNull($subm);
-        self::assertCount(2, $subm->xmlNamespaces);
-        self::assertArrayHasKey('old_foo', $subm->xmlNamespaces);
-        self::assertEquals('http://foo.example.org', $subm->xmlNamespaces['old_foo']);
-        self::assertArrayHasKey('foo', $subm->xmlNamespaces);
-        self::assertEquals('http://better.foo.example.org', $subm->xmlNamespaces['foo']);
-        self::assertCount(3, $subm->propertyMetadata);
+        $this->assertNotNull($subm);
+        $this->assertCount(2, $subm->xmlNamespaces);
+        $this->assertArrayHasKey('old_foo', $subm->xmlNamespaces);
+        $this->assertEquals('http://foo.example.org', $subm->xmlNamespaces['old_foo']);
+        $this->assertArrayHasKey('foo', $subm->xmlNamespaces);
+        $this->assertEquals('http://better.foo.example.org', $subm->xmlNamespaces['foo']);
+        $this->assertCount(3, $subm->propertyMetadata);
 
         $p = new PropertyMetadata($subm->name, 'moo');
-        $p->serializedName = 'moo';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->xmlNamespace = 'http://better.foo.example.org';
-        self::assertEquals($p, $subm->propertyMetadata['moo']);
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->xmlNamespace = "http://better.foo.example.org";
+        $this->assertEquals($p, $subm->propertyMetadata['moo']);
 
         $p = new PropertyMetadata($subm->name, 'baz');
-        $p->serializedName = 'baz';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->xmlNamespace = 'http://foo.example.org';
-        self::assertEquals($p, $subm->propertyMetadata['baz']);
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->xmlNamespace = "http://foo.example.org";
+        $this->assertEquals($p, $subm->propertyMetadata['baz']);
 
         $p = new PropertyMetadata($subm->name, 'qux');
-        $p->serializedName = 'qux';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->xmlNamespace = 'http://new.foo.example.org';
-        self::assertEquals($p, $subm->propertyMetadata['qux']);
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->xmlNamespace = "http://new.foo.example.org";
+        $this->assertEquals($p, $subm->propertyMetadata['qux']);
 
         $m->merge($subm);
-        self::assertNotNull($m);
-        self::assertCount(3, $m->xmlNamespaces);
-        self::assertArrayHasKey('old_foo', $m->xmlNamespaces);
-        self::assertEquals('http://foo.example.org', $m->xmlNamespaces['old_foo']);
-        self::assertArrayHasKey('foo', $m->xmlNamespaces);
-        self::assertEquals('http://better.foo.example.org', $m->xmlNamespaces['foo']);
-        self::assertArrayHasKey('new_foo', $m->xmlNamespaces);
-        self::assertEquals('http://new.foo.example.org', $m->xmlNamespaces['new_foo']);
-        self::assertCount(5, $m->propertyMetadata);
+        $this->assertNotNull($m);
+        $this->assertCount(3, $m->xmlNamespaces);
+        $this->assertArrayHasKey('old_foo', $m->xmlNamespaces);
+        $this->assertEquals('http://foo.example.org', $m->xmlNamespaces['old_foo']);
+        $this->assertArrayHasKey('foo', $m->xmlNamespaces);
+        $this->assertEquals('http://better.foo.example.org', $m->xmlNamespaces['foo']);
+        $this->assertArrayHasKey('new_foo', $m->xmlNamespaces);
+        $this->assertEquals('http://new.foo.example.org', $m->xmlNamespaces['new_foo']);
+        $this->assertCount(5, $m->propertyMetadata);
 
         $p = new PropertyMetadata($m->name, 'foo');
-        $p->serializedName = 'foo';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->xmlNamespace = 'http://old.foo.example.org';
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->xmlNamespace = "http://old.foo.example.org";
         $p->xmlAttribute = true;
         $p->class = 'JMS\Serializer\Tests\Fixtures\SimpleClassObject';
         $this->assetMetadataEquals($p, $m->propertyMetadata['foo']);
 
         $p = new PropertyMetadata($m->name, 'bar');
-        $p->serializedName = 'bar';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->xmlNamespace = 'http://foo.example.org';
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->xmlNamespace = "http://foo.example.org";
         $p->class = 'JMS\Serializer\Tests\Fixtures\SimpleClassObject';
         $this->assetMetadataEquals($p, $m->propertyMetadata['bar']);
 
         $p = new PropertyMetadata($m->name, 'moo');
-        $p->serializedName = 'moo';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->xmlNamespace = 'http://better.foo.example.org';
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->xmlNamespace = "http://better.foo.example.org";
         $this->assetMetadataEquals($p, $m->propertyMetadata['moo']);
 
         $p = new PropertyMetadata($m->name, 'baz');
-        $p->serializedName = 'baz';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->xmlNamespace = 'http://foo.example.org';
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->xmlNamespace = "http://foo.example.org";
         $this->assetMetadataEquals($p, $m->propertyMetadata['baz']);
 
         $p = new PropertyMetadata($m->name, 'qux');
-        $p->serializedName = 'qux';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->xmlNamespace = 'http://new.foo.example.org';
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->xmlNamespace = "http://new.foo.example.org";
         $this->assetMetadataEquals($p, $m->propertyMetadata['qux']);
     }
 
@@ -555,7 +467,28 @@ abstract class BaseDriverTest extends TestCase
         $expectedVars = get_object_vars($expected);
         $actualVars = get_object_vars($actual);
 
-        self::assertEquals($expectedVars, $actualVars);
+        $expectedReflection = (array)$expectedVars['reflection'];
+        $actualReflection = (array)$actualVars['reflection'];
+
+        // HHVM bug with class property
+        unset($expectedVars['reflection'], $actualVars['reflection']);
+        $this->assertEquals($expectedVars, $actualVars);
+
+        // HHVM bug with class property
+        if (isset($expectedReflection['info']) || isset($actualReflection['info'])) {
+            $expectedReflection['class'] = $expectedReflection['info']['class'];
+            $actualReflection['class'] = $actualReflection['info']['class'];
+        }
+
+        $this->assertEquals($expectedReflection, $actualReflection);
+    }
+
+    public function testHandlerCallbacks()
+    {
+        $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\ObjectWithHandlerCallbacks'));
+
+        $this->assertEquals('toJson', $m->handlerCallbacks[GraphNavigator::DIRECTION_SERIALIZATION]['json']);
+        $this->assertEquals('toXml', $m->handlerCallbacks[GraphNavigator::DIRECTION_SERIALIZATION]['xml']);
     }
 
     public function testExclusionIf()
@@ -564,116 +497,34 @@ abstract class BaseDriverTest extends TestCase
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass($class));
 
         $p = new PropertyMetadata($class, 'name');
-        $p->serializedName = 'name';
-        $p->type = ['name' => 'string', 'params' => []];
-        self::assertEquals($p, $m->propertyMetadata['name']);
+        $p->type = array('name' => 'string', 'params' => array());
+        $this->assertEquals($p, $m->propertyMetadata['name']);
 
         $p = new PropertyMetadata($class, 'gender');
-        $p->serializedName = 'gender';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->excludeIf = $this->getExpressionEvaluator()->parse("show_data('gender')", ['context', 'class_metadata', 'object']);
-        self::assertEquals($p, $m->propertyMetadata['gender']);
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->excludeIf = "show_data('gender')";
+        $this->assertEquals($p, $m->propertyMetadata['gender']);
 
         $p = new PropertyMetadata($class, 'age');
-        $p->serializedName = 'age';
-        $p->type = ['name' => 'string', 'params' => []];
-        $p->excludeIf = $this->getExpressionEvaluator()->parse("!(show_data('age'))", ['context', 'class_metadata', 'object']);
-        self::assertEquals($p, $m->propertyMetadata['age']);
-    }
-
-    public function testLifeCycleCallbacks()
-    {
-        $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass(ObjectWithOnlyLifecycleCallbacks::class));
-        \assert($m instanceof ClassMetadata);
-
-        $c = new ClassMetadata(ObjectWithOnlyLifecycleCallbacks::class);
-        $c->preSerializeMethods[] = new MethodMetadata(ObjectWithOnlyLifecycleCallbacks::class, 'prepareForSerialization');
-        self::assertEquals($c->preSerializeMethods, $m->preSerializeMethods);
-
-        $c->postSerializeMethods[] = new MethodMetadata(ObjectWithOnlyLifecycleCallbacks::class, 'cleanUpAfterSerialization');
-        self::assertEquals($c->postSerializeMethods, $m->postSerializeMethods);
-
-        $c->postDeserializeMethods[] = new MethodMetadata(ObjectWithOnlyLifecycleCallbacks::class, 'afterDeserialization');
-        self::assertEquals($c->postDeserializeMethods, $m->postDeserializeMethods);
-    }
-
-    public function testExclusionIfOnClass()
-    {
-        $class = 'JMS\Serializer\Tests\Fixtures\PersonAccount';
-        $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass($class));
-        \assert($m instanceof ClassMetadata);
-
-        $c = new ClassMetadata($class);
-        $c->excludeIf = $this->getExpressionEvaluator()->parse('object.expired', ['context', 'class_metadata', 'object']);
-        self::assertEquals($c->excludeIf->serialize(), $m->excludeIf->serialize());
-    }
-
-    public function testObjectWithVirtualPropertiesAndDuplicatePropNameExcludeAll()
-    {
-        $class = ObjectWithVirtualPropertiesAndDuplicatePropNameExcludeAll::class;
-        $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass($class));
-
-        $p = new VirtualPropertyMetadata($class, 'name');
-        $p->serializedName = 'mood';
-        $p->getter = 'getName';
-
-        self::assertEquals($p, $m->propertyMetadata['name']);
-    }
-
-    public function testObjectWithVirtualPropertiesAndDuplicatePropName()
-    {
-        $class = ObjectWithVirtualPropertiesAndDuplicatePropName::class;
-        $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass($class));
-
-        $p = new PropertyMetadata($class, 'id');
-        $p->serializedName = 'id';
-        self::assertEquals($p, $m->propertyMetadata['id']);
-
-        $p = new PropertyMetadata($class, 'name');
-        $p->serializedName = 'name';
-        self::assertEquals($p, $m->propertyMetadata['name']);
-
-        $p = new VirtualPropertyMetadata($class, 'foo');
-        $p->serializedName = 'id';
-        $p->getter = 'getId';
-
-        self::assertEquals($p, $m->propertyMetadata['foo']);
-
-        $p = new VirtualPropertyMetadata($class, 'bar');
-        $p->serializedName = 'mood';
-        $p->getter = 'getName';
-
-        self::assertEquals($p, $m->propertyMetadata['bar']);
+        $p->type = array('name' => 'string', 'params' => array());
+        $p->excludeIf = "!(show_data('age'))";
+        $this->assertEquals($p, $m->propertyMetadata['age']);
     }
 
     public function testExcludePropertyNoPublicAccessorException()
     {
         $first = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\ExcludePublicAccessor'));
 
-        self::assertArrayHasKey('id', $first->propertyMetadata);
-        self::assertArrayNotHasKey('iShallNotBeAccessed', $first->propertyMetadata);
+        if ($this instanceof PhpDriverTest) {
+            return;
+        }
+        $this->assertArrayHasKey('id', $first->propertyMetadata);
+        $this->assertArrayNotHasKey('iShallNotBeAccessed', $first->propertyMetadata);
     }
 
-    public function testShortExposeSyntax(): void
-    {
-        $m = $this->getDriver('short_expose')->loadMetadataForClass(new \ReflectionClass(Person::class));
 
-        self::assertArrayHasKey('name', $m->propertyMetadata);
-        self::assertArrayNotHasKey('age', $m->propertyMetadata);
-    }
-
-    abstract protected function getDriver(?string $subDir = null, bool $addUnderscoreDir = true): DriverInterface;
-
-    protected function getExpressionEvaluator()
-    {
-        $language = new ExpressionLanguage();
-
-        $language->addFunction(new ExpressionFunction('show_data', static function () {
-            return 'true';
-        }, static function () {
-            return true;
-        }));
-
-        return new ExpressionEvaluator($language);
-    }
+    /**
+     * @return DriverInterface
+     */
+    abstract protected function getDriver();
 }

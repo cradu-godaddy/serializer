@@ -8,3 +8,4 @@ phpstan.xml
 /doc/_build/*
 /.phpunit.result.cache
 **/.DS_STORE
+/nbproject/private/

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation as Serializer;
@@ -13,12 +11,13 @@ class AuthorList implements \IteratorAggregate, \Countable, \ArrayAccess
 {
     /**
      * @Serializer\Type("array<JMS\Serializer\Tests\Fixtures\Author>")
-     *
      * @var array
      */
-    #[Serializer\Type(name: 'array<JMS\Serializer\Tests\Fixtures\Author>')]
-    protected $authors = [];
+    protected $authors = array();
 
+    /**
+     * @param Author $author
+     */
     public function add(Author $author)
     {
         $this->authors[] = $author;
@@ -27,7 +26,7 @@ class AuthorList implements \IteratorAggregate, \Countable, \ArrayAccess
     /**
      * @see IteratorAggregate
      */
-    public function getIterator(): \Traversable
+    public function getIterator()
     {
         return new \ArrayIterator($this->authors);
     }
@@ -35,7 +34,7 @@ class AuthorList implements \IteratorAggregate, \Countable, \ArrayAccess
     /**
      * @see Countable
      */
-    public function count(): int
+    public function count()
     {
         return count($this->authors);
     }
@@ -43,7 +42,6 @@ class AuthorList implements \IteratorAggregate, \Countable, \ArrayAccess
     /**
      * @see ArrayAccess
      */
-    #[\ReturnTypeWillChange]
     public function offsetExists($offset)
     {
         return isset($this->authors[$offset]);
@@ -52,16 +50,14 @@ class AuthorList implements \IteratorAggregate, \Countable, \ArrayAccess
     /**
      * @see ArrayAccess
      */
-    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
-        return $this->authors[$offset] ?? null;
+        return isset($this->authors[$offset]) ? $this->authors[$offset] : null;
     }
 
     /**
      * @see ArrayAccess
      */
-    #[\ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
         if (null === $offset) {
@@ -74,9 +70,9 @@ class AuthorList implements \IteratorAggregate, \Countable, \ArrayAccess
     /**
      * @see ArrayAccess
      */
-    #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         unset($this->authors[$offset]);
     }
+
 }

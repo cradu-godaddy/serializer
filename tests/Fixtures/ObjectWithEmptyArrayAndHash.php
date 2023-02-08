@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation as Serializer;
@@ -12,23 +10,17 @@ class ObjectWithEmptyArrayAndHash
      * @Serializer\Type("array<string,string>")
      * @Serializer\SkipWhenEmpty()
      */
-    #[Serializer\Type(name: 'array<string,string>')]
-    #[Serializer\SkipWhenEmpty]
-    private $hash = [];
-
+    private $hash = array();
     /**
      * @Serializer\Type("array<string>")
      * @Serializer\SkipWhenEmpty()
      */
-    #[Serializer\Type(name: 'array<string>')]
-    #[Serializer\SkipWhenEmpty]
-    private $array = [];
+    private $array = array();
 
     /**
      * @Serializer\SkipWhenEmpty()
      */
-    #[Serializer\SkipWhenEmpty]
-    private $object = [];
+    private $object = array();
 
     public function __construct()
     {

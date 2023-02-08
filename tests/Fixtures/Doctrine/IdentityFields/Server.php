@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures\Doctrine\IdentityFields;
 
 use Doctrine\ORM\Mapping as ORM;
@@ -11,37 +9,31 @@ use JMS\Serializer\Annotation as Serializer;
 class Server
 {
     /**
-     * @Serializer\Type("string")
      * @ORM\Id
      * @ORM\Column(type="string", name="ip_address")
-     *
+     * @Serializer\Type("string")
      * @var string
      */
-    #[Serializer\Type(name: 'string')]
     protected $ipAddress;
 
     /**
-     * @Serializer\SerializedName("server_id_extracted")
-     * @Serializer\Type("string")
      * @ORM\Id
      * @ORM\Column(type="string", name="server_id")
-     *
+     * @Serializer\SerializedName("server_id_extracted")
+     * @Serializer\Type("string")
      * @var string
      */
-    #[Serializer\SerializedName(name: 'server_id_extracted')]
-    #[Serializer\Type(name: 'string')]
     protected $serverId;
 
     /**
-     * @Serializer\Type("string")
      * @ORM\Column(type="string")
-     *
+     * @Serializer\Type("string")
      * @var string
      */
-    #[Serializer\Type(name: 'string')]
     private $name;
 
     /**
+     * Server constructor.
      * @param string $name
      * @param string $ipAddress
      * @param string $serverId

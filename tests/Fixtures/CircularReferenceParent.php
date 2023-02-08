@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use Doctrine\Common\Collections\ArrayCollection;
@@ -12,11 +10,9 @@ use JMS\Serializer\Annotation\Type;
 class CircularReferenceParent
 {
     /** @Type("array<JMS\Serializer\Tests\Fixtures\CircularReferenceChild>") */
-    #[Type(name: 'array<JMS\Serializer\Tests\Fixtures\CircularReferenceChild>')]
-    protected $collection = [];
+    protected $collection = array();
 
     /** @Type("ArrayCollection<JMS\Serializer\Tests\Fixtures\CircularReferenceChild>") */
-    #[Type(name: 'ArrayCollection<JMS\Serializer\Tests\Fixtures\CircularReferenceChild>')]
     private $anotherCollection;
 
     public function __construct()
@@ -30,13 +26,11 @@ class CircularReferenceParent
     }
 
     /** @PostDeserialize */
-    #[PostDeserialize]
     private function afterDeserialization()
     {
         if (!$this->collection) {
-            $this->collection = [];
+            $this->collection = array();
         }
-
         foreach ($this->collection as $v) {
             $v->setParent($this);
         }
@@ -44,7 +38,6 @@ class CircularReferenceParent
         if (!$this->anotherCollection) {
             $this->anotherCollection = new ArrayCollection();
         }
-
         foreach ($this->anotherCollection as $v) {
             $v->setParent($this);
         }

@@ -1,21 +1,18 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Serializer\Naming;
 
 use JMS\Serializer\Naming\IdenticalPropertyNamingStrategy;
-use PHPUnit\Framework\TestCase;
 
-class IdenticalPropertyNamingStrategyTest extends TestCase
+class IdenticalPropertyNamingStrategyTest extends \PHPUnit_Framework_TestCase
 {
     public function providePropertyNames()
     {
-        return [
-            ['createdAt'],
-            ['my_field'],
-            ['identical'],
-        ];
+        return array(
+            array('createdAt'),
+            array('my_field'),
+            array('identical')
+        );
     }
 
     /**
@@ -27,6 +24,6 @@ class IdenticalPropertyNamingStrategyTest extends TestCase
         $mockProperty->name = $propertyName;
 
         $strategy = new IdenticalPropertyNamingStrategy();
-        self::assertEquals($propertyName, $strategy->translateName($mockProperty));
+        $this->assertEquals($propertyName, $strategy->translateName($mockProperty));
     }
 }

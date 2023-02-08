@@ -1,67 +1,57 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Serializer;
 
 use JMS\Serializer\Context;
 use JMS\Serializer\EventDispatcher\Event;
 use JMS\Serializer\EventDispatcher\EventSubscriberInterface;
-use JMS\Serializer\EventDispatcher\ObjectEvent;
 use JMS\Serializer\Exception\RuntimeException;
-use JMS\Serializer\GraphNavigatorInterface;
+use JMS\Serializer\GraphNavigator;
 use JMS\Serializer\SerializationContext;
 use JMS\Serializer\Tests\Fixtures\Author;
 use JMS\Serializer\Tests\Fixtures\AuthorList;
-use JMS\Serializer\Tests\Fixtures\FirstClassMapCollection;
 use JMS\Serializer\Tests\Fixtures\ObjectWithEmptyArrayAndHash;
 use JMS\Serializer\Tests\Fixtures\ObjectWithInlineArray;
 use JMS\Serializer\Tests\Fixtures\Tag;
-use JMS\Serializer\Visitor\Factory\JsonSerializationVisitorFactory;
-use JMS\Serializer\Visitor\SerializationVisitorInterface;
+use JMS\Serializer\VisitorInterface;
 
 class JsonSerializationTest extends BaseSerializationTest
 {
     protected function getContent($key)
     {
-        static $outputs = [];
+        static $outputs = array();
 
         if (!$outputs) {
-            $outputs['nullable_root'] = 'null';
             $outputs['readonly'] = '{"id":123,"full_name":"Ruud Kamphuis"}';
             $outputs['string'] = '"foo"';
             $outputs['boolean_true'] = 'true';
             $outputs['boolean_false'] = 'false';
             $outputs['integer'] = '1';
             $outputs['float'] = '4.533';
-            $outputs['float_trailing_zero'] = '1.0';
+            $outputs['float_trailing_zero'] = '1';
             $outputs['simple_object'] = '{"foo":"foo","moo":"bar","camel_case":"boo"}';
             $outputs['circular_reference'] = '{"collection":[{"name":"child1"},{"name":"child2"}],"another_collection":[{"name":"child1"},{"name":"child2"}]}';
-            $outputs['circular_reference_collection'] = '{"name":"foo","collection":[]}';
             $outputs['array_strings'] = '["foo","bar"]';
             $outputs['array_booleans'] = '[true,false]';
             $outputs['array_integers'] = '[1,3,4]';
             $outputs['array_empty'] = '{"array":[]}';
-            $outputs['array_floats'] = '[1.34,3.0,6.42]';
+            $outputs['array_floats'] = '[1.34,3,6.42]';
             $outputs['array_objects'] = '[{"foo":"foo","moo":"bar","camel_case":"boo"},{"foo":"baz","moo":"boo","camel_case":"boo"}]';
             $outputs['array_list_and_map_difference'] = '{"list":[1,2,3],"map":{"0":1,"2":2,"3":3}}';
             $outputs['array_mixed'] = '["foo",1,true,{"foo":"foo","moo":"bar","camel_case":"boo"},[1,3,true]]';
-            $outputs['array_datetimes_object'] = '{"array_with_default_date_time":["2047-01-01T12:47:47+00:00","2016-12-05T00:00:00+00:00"],"array_with_formatted_date_time":["01.01.2047 12:47:47","05.12.2016 00:00:00"]}';
+            $outputs['array_datetimes_object'] = '{"array_with_default_date_time":["2047-01-01T12:47:47+0000","2016-12-05T00:00:00+0000"],"array_with_formatted_date_time":["01.01.2047 12:47:47","05.12.2016 00:00:00"]}';
             $outputs['array_named_datetimes_object'] = '{"named_array_with_formatted_date":{"testdate1":"01.01.2047 12:47:47","testdate2":"05.12.2016 00:00:00"}}';
-            $outputs['array_datetimes_object'] = '{"array_with_default_date_time":["2047-01-01T12:47:47+00:00","2016-12-05T00:00:00+00:00"],"array_with_formatted_date_time":["01.01.2047 12:47:47","05.12.2016 00:00:00"]}';
+            $outputs['array_datetimes_object'] = '{"array_with_default_date_time":["2047-01-01T12:47:47+0000","2016-12-05T00:00:00+0000"],"array_with_formatted_date_time":["01.01.2047 12:47:47","05.12.2016 00:00:00"]}';
             $outputs['array_named_datetimes_object'] = '{"named_array_with_formatted_date":{"testdate1":"01.01.2047 12:47:47","testdate2":"05.12.2016 00:00:00"}}';
             $outputs['array_named_datetimeimmutables_object'] = '{"named_array_with_formatted_date":{"testdate1":"01.01.2047 12:47:47","testdate2":"05.12.2016 00:00:00"}}';
-            $outputs['blog_post'] = '{"id":"what_a_nice_id","title":"This is a nice title.","created_at":"2011-07-30T00:00:00+00:00","is_published":false,"is_reviewed":false,"etag":"e86ce85cdb1253e4fc6352f5cf297248bceec62b","comments":[{"author":{"full_name":"Foo Bar"},"text":"foo"}],"comments2":[{"author":{"full_name":"Foo Bar"},"text":"foo"}],"metadata":{"foo":"bar"},"author":{"full_name":"Foo Bar"},"publisher":{"pub_name":"Bar Foo"},"tag":[{"name":"tag1"},{"name":"tag2"}]}';
-            $outputs['blog_post_unauthored'] = '{"id":"what_a_nice_id","title":"This is a nice title.","created_at":"2011-07-30T00:00:00+00:00","is_published":false,"is_reviewed":false,"etag":"e86ce85cdb1253e4fc6352f5cf297248bceec62b","comments":[],"comments2":[],"metadata":{"foo":"bar"},"author":null,"publisher":null,"tag":null}';
-            $outputs['price'] = '{"price":3.0}';
+            $outputs['blog_post'] = '{"id":"what_a_nice_id","title":"This is a nice title.","created_at":"2011-07-30T00:00:00+0000","is_published":false,"is_reviewed":false,"etag":"1edf9bf60a32d89afbb85b2be849e3ceed5f5b10","comments":[{"author":{"full_name":"Foo Bar"},"text":"foo"}],"comments2":[{"author":{"full_name":"Foo Bar"},"text":"foo"}],"metadata":{"foo":"bar"},"author":{"full_name":"Foo Bar"},"publisher":{"pub_name":"Bar Foo"},"tag":[{"name":"tag1"},{"name":"tag2"}]}';
+            $outputs['blog_post_unauthored'] = '{"id":"what_a_nice_id","title":"This is a nice title.","created_at":"2011-07-30T00:00:00+0000","is_published":false,"is_reviewed":false,"etag":"1edf9bf60a32d89afbb85b2be849e3ceed5f5b10","comments":[],"comments2":[],"metadata":{"foo":"bar"},"author":null,"publisher":null,"tag":null}';
+            $outputs['price'] = '{"price":3}';
             $outputs['currency_aware_price'] = '{"currency":"EUR","amount":2.34}';
             $outputs['order'] = '{"cost":{"price":12.34}}';
             $outputs['order_with_currency_aware_price'] = '{"cost":{"currency":"EUR","amount":1.23}}';
             $outputs['log'] = '{"author_list":[{"full_name":"Johannes Schmitt"},{"full_name":"John Doe"}],"comments":[{"author":{"full_name":"Foo Bar"},"text":"foo"},{"author":{"full_name":"Foo Bar"},"text":"bar"},{"author":{"full_name":"Foo Bar"},"text":"baz"}]}';
             $outputs['lifecycle_callbacks'] = '{"name":"Foo Bar"}';
-            $outputs['list'] = '[1,3,4]';
-            $outputs['list_empty'] = '[]';
-            $outputs['list_integers'] = '[1,3,4]';
             $outputs['form_errors'] = '["This is the form error","Another error"]';
             $outputs['nested_form_errors'] = '{"errors":["This is the form error"],"children":{"bar":{"errors":["Error of the child form"]}}}';
             $outputs['constraint_violation'] = '{"property_path":"foo","message":"Message of violation"}';
@@ -81,11 +71,11 @@ class JsonSerializationTest extends BaseSerializationTest
             $outputs['groups_foo'] = '{"foo":"foo","foobar":"foobar"}';
             $outputs['groups_foobar'] = '{"foo":"foo","foobar":"foobar","bar":"bar"}';
             $outputs['groups_default'] = '{"bar":"bar","none":"none"}';
-            $outputs['groups_advanced'] = '{"name":"John","manager":{"name":"John Manager","friends":[{"nickname":"nickname"},{"nickname":"nickname"}]},"friends":[{"nickname":"nickname","manager":{"name":"John friend 1 manager"}},{"nickname":"nickname","manager":{"name":"John friend 2 manager"}}]}';
+            $outputs['groups_advanced'] = '{"name":"John","manager":{"name":"John Manager","friends":[{"nickname":"nickname"},{"nickname":"nickname"}]},"friends":[{"manager":{"name":"John friend 1 manager"}},{"manager":{"name":"John friend 2 manager"}}]}';
             $outputs['virtual_properties'] = '{"exist_field":"value","virtual_value":"value","test":"other-name","typed_virtual_property":1}';
-            $outputs['virtual_properties_low'] = '{"classlow":1,"low":1}';
-            $outputs['virtual_properties_high'] = '{"classhigh":8,"high":8}';
-            $outputs['virtual_properties_all'] = '{"classlow":1,"classhigh":8,"low":1,"high":8}';
+            $outputs['virtual_properties_low'] = '{"low":1}';
+            $outputs['virtual_properties_high'] = '{"high":8}';
+            $outputs['virtual_properties_all'] = '{"low":1,"high":8}';
             $outputs['nullable'] = '{"foo":"bar","baz":null,"0":null}';
             $outputs['nullable_skip'] = '{"foo":"bar"}';
             $outputs['person_secret_show'] = '{"name":"mike","gender":"f"}';
@@ -96,9 +86,8 @@ class JsonSerializationTest extends BaseSerializationTest
             $outputs['hash_empty'] = '{"hash":{}}';
             $outputs['object_when_null'] = '{"text":"foo"}';
             $outputs['object_when_null_and_serialized'] = '{"author":null,"text":"foo"}';
-            $outputs['date_time'] = '"2011-08-30T00:00:00+00:00"';
-            $outputs['date_time_immutable'] = '"2011-08-30T00:00:00+00:00"';
-            $outputs['date_time_multi_format'] = '"2011-08-30T00:00:00+00:00"';
+            $outputs['date_time'] = '"2011-08-30T00:00:00+0000"';
+            $outputs['date_time_immutable'] = '"2011-08-30T00:00:00+0000"';
             $outputs['timestamp'] = '{"timestamp":1455148800}';
             $outputs['timestamp_prev'] = '{"timestamp":"1455148800"}';
             $outputs['date_interval'] = '"PT45M"';
@@ -113,37 +102,8 @@ class JsonSerializationTest extends BaseSerializationTest
             $outputs['object_with_object_property_no_array_to_author'] = '{"foo": "bar", "author": "baz"}';
             $outputs['object_with_object_property'] = '{"foo": "bar", "author": {"full_name": "baz"}}';
             $outputs['author_expression'] = '{"my_first_name":"Ruud","last_name":"Kamphuis","id":123}';
-            $outputs['author_expression_context'] = '{"first_name":"Ruud","direction":1,"name":"name"}';
             $outputs['maxdepth_skippabe_object'] = '{"a":{"xxx":"yyy"}}';
-            $outputs['maxdepth_0'] = '{"a":{}}';
-            $outputs['maxdepth_1'] = '{"a":{"b":12345}}';
-            $outputs['array_objects_nullable'] = '[]';
             $outputs['type_casting'] = '{"as_string":"8"}';
-            $outputs['authors_inline'] = '[{"full_name":"foo"},{"full_name":"bar"}]';
-            $outputs['inline_list_collection'] = '[1,2,3]';
-            $outputs['inline_empty_list_collection'] = '[]';
-            $outputs['inline_deserialization_list_collection'] = '[1,2]';
-            $outputs['inline_map'] = '{"a":"1","b":"2","c":"3"}';
-            $outputs['inline_empty_map'] = '{}';
-            $outputs['empty_object'] = '{}';
-            $outputs['inline_deserialization_map'] = '{"a":"b","c":"d","e":"5"}';
-            $outputs['iterable'] = '{"iterable":{"foo":"bar","bar":"foo"}}';
-            $outputs['iterator'] = '{"iterator":{"foo":"bar","bar":"foo"}}';
-            $outputs['array_iterator'] = '{"iterator":{"foo":"bar","bar":"foo"}}';
-            $outputs['generator'] = '{"generator":{"foo":"bar","bar":"foo"}}';
-            $outputs['ParentNoMetadataChildObject'] = '{"bar":"John"}';
-            $outputs['user_discriminator_array'] = '[{"entityName":"User"},{"entityName":"ExtendedUser"}]';
-            $outputs['user_discriminator'] = '{"entityName":"User"}';
-            $outputs['user_discriminator_extended'] = '{"entityName":"ExtendedUser"}';
-            $outputs['typed_props'] = '{"id":1,"role":{"id":5},"vehicle":{"type":"car"},"created":"2010-10-01T00:00:00+00:00","updated":"2011-10-01T00:00:00+00:00","tags":["a","b"]}';
-            $outputs['typed_props_constructor_promotion_with_default_values'] = '{"color":"blue","size":"big","type_of_soil":"potting mix","days_since_potting":-1,"weight":10}';
-            $outputs['uninitialized_typed_props'] = '{"id":1,"role":{},"tags":[]}';
-            $outputs['custom_datetimeinterface'] = '{"custom":"2021-09-07"}';
-            $outputs['data_integer'] = '{"data":10000}';
-            $outputs['uid'] = '"66b3177c-e03b-4a22-9dee-ddd7d37a04d5"';
-            $outputs['object_with_enums'] = '{"ordinary":"Clubs","backed":"C","ordinary_array":["Clubs","Spades"],"backed_array":["C","H"],"ordinary_auto_detect":"Clubs","backed_auto_detect":"C","backed_int_auto_detect":3,"backed_int":3,"backed_name":"C","backed_int_forced_str":3}';
-            $outputs['object_with_autodetect_enums'] = '{"ordinary_array_auto_detect":["Clubs","Spades"],"backed_array_auto_detect":["C","H"],"mixed_array_auto_detect":["Clubs","H"]}';
-            $outputs['object_with_enums_disabled'] = '{"ordinary_array_auto_detect":[{"name":"Clubs"},{"name":"Spades"}],"backed_array_auto_detect":[{"name":"Clubs","value":"C"},{"name":"Hearts","value":"H"}],"mixed_array_auto_detect":[{"name":"Clubs"},{"name":"Hearts","value":"H"}]}';
         }
 
         if (!isset($outputs[$key])) {
@@ -157,53 +117,24 @@ class JsonSerializationTest extends BaseSerializationTest
     {
         $object = new ObjectWithEmptyArrayAndHash();
 
-        self::assertEquals('{}', $this->serialize($object));
-    }
-
-    public function getFirstClassMapCollectionsValues()
-    {
-        return [
-            [['a' => '1', 'b' => '2', 'c' => '3'], $this->getContent('inline_map')],
-            [[], $this->getContent('inline_empty_map')],
-            [['a' => 'b', 'c' => 'd', 'e' => '5'], $this->getContent('inline_deserialization_map')],
-        ];
-    }
-
-    /**
-     * @param array $items
-     * @param array $expected
-     *
-     * @dataProvider getFirstClassMapCollectionsValues
-     */
-    public function testFirstClassMapCollections($items, $expected): void
-    {
-        $collection = new FirstClassMapCollection($items);
-
-        self::assertSame($expected, $this->serialize($collection));
-        self::assertEquals(
-            $collection,
-            $this->deserialize($expected, get_class($collection))
-        );
+        $this->assertEquals('{}', $this->serialize($object));
     }
 
     public function testAddLinksToOutput()
     {
-        $this->dispatcher->addListener('serializer.post_serialize', static function (Event $event) {
-            self::assertFalse($event->getVisitor()->hasData('_links'));
+        $this->dispatcher->addListener('serializer.post_serialize', function (Event $event) {
+            $this->assertFalse($event->getVisitor()->hasData('_links'));
         }, 'JMS\Serializer\Tests\Fixtures\Author', 'json');
 
         $this->dispatcher->addSubscriber(new LinkAddingSubscriber());
 
-        $this->dispatcher->addListener('serializer.post_serialize', static function (Event $event) {
-            self::assertTrue($event->getVisitor()->hasData('_links'));
+        $this->dispatcher->addListener('serializer.post_serialize', function (Event $event) {
+            $this->assertTrue($event->getVisitor()->hasData('_links'));
         }, 'JMS\Serializer\Tests\Fixtures\Author', 'json');
 
-        $this->handlerRegistry->registerHandler(
-            GraphNavigatorInterface::DIRECTION_SERIALIZATION,
-            'JMS\Serializer\Tests\Fixtures\AuthorList',
-            'json',
-            static function (SerializationVisitorInterface $visitor, AuthorList $data, array $type, Context $context) {
-                return $visitor->visitArray(iterator_to_array($data), $type);
+        $this->handlerRegistry->registerHandler(GraphNavigator::DIRECTION_SERIALIZATION, 'JMS\Serializer\Tests\Fixtures\AuthorList', 'json',
+            function (VisitorInterface $visitor, AuthorList $data, array $type, Context $context) {
+                return $visitor->visitArray(iterator_to_array($data), $type, $context);
             }
         );
 
@@ -211,18 +142,15 @@ class JsonSerializationTest extends BaseSerializationTest
         $list->add(new Author('foo'));
         $list->add(new Author('bar'));
 
-        self::assertEquals('[{"full_name":"foo","_links":{"details":"http:\/\/foo.bar\/details\/foo","comments":"http:\/\/foo.bar\/details\/foo\/comments"}},{"full_name":"bar","_links":{"details":"http:\/\/foo.bar\/details\/bar","comments":"http:\/\/foo.bar\/details\/bar\/comments"}}]', $this->serialize($list));
+        $this->assertEquals('[{"full_name":"foo","_links":{"details":"http:\/\/foo.bar\/details\/foo","comments":"http:\/\/foo.bar\/details\/foo\/comments"}},{"full_name":"bar","_links":{"details":"http:\/\/foo.bar\/details\/bar","comments":"http:\/\/foo.bar\/details\/bar\/comments"}}]', $this->serialize($list));
     }
 
     public function testReplaceNameInOutput()
     {
         $this->dispatcher->addSubscriber(new ReplaceNameSubscriber());
-        $this->handlerRegistry->registerHandler(
-            GraphNavigatorInterface::DIRECTION_SERIALIZATION,
-            'JMS\Serializer\Tests\Fixtures\AuthorList',
-            'json',
-            static function (SerializationVisitorInterface $visitor, AuthorList $data, array $type, Context $context) {
-                return $visitor->visitArray(iterator_to_array($data), $type);
+        $this->handlerRegistry->registerHandler(GraphNavigator::DIRECTION_SERIALIZATION, 'JMS\Serializer\Tests\Fixtures\AuthorList', 'json',
+            function (VisitorInterface $visitor, AuthorList $data, array $type, Context $context) {
+                return $visitor->visitArray(iterator_to_array($data), $type, $context);
             }
         );
 
@@ -230,48 +158,66 @@ class JsonSerializationTest extends BaseSerializationTest
         $list->add(new Author('foo'));
         $list->add(new Author('bar'));
 
-        self::assertEquals('[{"full_name":"new name"},{"full_name":"new name"}]', $this->serialize($list));
+        $this->assertEquals('[{"full_name":"new name"},{"full_name":"new name"}]', $this->serialize($list));
     }
 
+    /**
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage Invalid data "baz"(string), expected "JMS\Serializer\Tests\Fixtures\Author".
+     */
     public function testDeserializingObjectWithObjectPropertyWithNoArrayToObject()
     {
         $content = $this->getContent('object_with_object_property_no_array_to_author');
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Invalid data "baz" (string), expected "JMS\Serializer\Tests\Fixtures\Author".');
-
-        $this->deserialize($content, 'JMS\Serializer\Tests\Fixtures\ObjectWithObjectProperty');
+        $object = $this->deserialize($content, 'JMS\Serializer\Tests\Fixtures\ObjectWithObjectProperty');
+        $this->assertEquals('bar', $object->getFoo());
+        $this->assertInstanceOf('JMS\Serializer\Tests\Fixtures\Author', $object->getAuthor());
     }
 
     public function testDeserializingObjectWithObjectProperty()
     {
         $content = $this->getContent('object_with_object_property');
         $object = $this->deserialize($content, 'JMS\Serializer\Tests\Fixtures\ObjectWithObjectProperty');
-        self::assertEquals('bar', $object->getFoo());
-        self::assertInstanceOf('JMS\Serializer\Tests\Fixtures\Author', $object->getAuthor());
-        self::assertEquals('baz', $object->getAuthor()->getName());
+        $this->assertEquals('bar', $object->getFoo());
+        $this->assertInstanceOf('JMS\Serializer\Tests\Fixtures\Author', $object->getAuthor());
+        $this->assertEquals('baz', $object->getAuthor()->getName());
     }
 
     public function getPrimitiveTypes()
     {
-        return [
-            [
+        return array(
+            array(
                 'type' => 'boolean',
                 'data' => true,
-            ],
-            [
+            ),
+            array(
+                'type' => 'boolean',
+                'data' => 1,
+            ),
+            array(
                 'type' => 'integer',
                 'data' => 123,
-            ],
-            [
+            ),
+            array(
+                'type' => 'integer',
+                'data' => "123",
+            ),
+            array(
                 'type' => 'string',
-                'data' => 'hello',
-            ],
-            [
+                'data' => "hello",
+            ),
+            array(
+                'type' => 'string',
+                'data' => 123,
+            ),
+            array(
                 'type' => 'double',
                 'data' => 0.1234,
-            ],
-        ];
+            ),
+            array(
+                'type' => 'double',
+                'data' => "0.1234",
+            ),
+        );
     }
 
     /**
@@ -279,14 +225,13 @@ class JsonSerializationTest extends BaseSerializationTest
      */
     public function testPrimitiveTypes($primitiveType, $data)
     {
-        $navigator = $this->getMockBuilder(GraphNavigatorInterface::class)->getMock();
-
-        $factory = new JsonSerializationVisitorFactory();
-        $visitor = $factory->getVisitor();
-        $visitor->setNavigator($navigator);
+        $visitor = $this->serializationVisitors->get('json')->get();
         $functionToCall = 'visit' . ucfirst($primitiveType);
-        $result = $visitor->$functionToCall($data, [], $this->getMockBuilder(SerializationContext::class)->getMock());
-        self::{'assertIs' . (['boolean' => 'bool', 'integer' => 'int', 'double' => 'float'][$primitiveType] ?? $primitiveType)}($result);
+        $result = $visitor->$functionToCall($data, array(), $this->getMockBuilder('JMS\Serializer\Context')->getMock());
+        if ($primitiveType == 'double') {
+            $primitiveType = 'float';
+        }
+        $this->assertInternalType($primitiveType, $result);
     }
 
     /**
@@ -294,69 +239,64 @@ class JsonSerializationTest extends BaseSerializationTest
      */
     public function testSerializeEmptyObject()
     {
-        self::assertEquals('{}', $this->serialize(new Author(null)));
+        $this->assertEquals('{}', $this->serialize(new Author(null)));
     }
 
     /**
      * @group encoding
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage Your data could not be encoded because it contains invalid UTF8 characters.
      */
     public function testSerializeWithNonUtf8EncodingWhenDisplayErrorsOff()
     {
-        ini_set('display_errors', '1');
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Your data could not be encoded because it contains invalid UTF8 characters.');
-
-        $this->serialize(['foo' => 'bar', 'bar' => pack('H*', 'c32e')]);
+        ini_set('display_errors', 1);
+        $this->serialize(array('foo' => 'bar', 'bar' => pack("H*", 'c32e')));
     }
 
     /**
      * @group encoding
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage Your data could not be encoded because it contains invalid UTF8 characters.
      */
     public function testSerializeWithNonUtf8EncodingWhenDisplayErrorsOn()
     {
-        ini_set('display_errors', '0');
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Your data could not be encoded because it contains invalid UTF8 characters.');
-
-        $this->serialize(['foo' => 'bar', 'bar' => pack('H*', 'c32e')]);
+        ini_set('display_errors', 0);
+        $this->serialize(array('foo' => 'bar', 'bar' => pack("H*", 'c32e')));
     }
 
     public function testSerializeArrayWithEmptyObject()
     {
-        self::assertEquals('[{}]', $this->serialize([new \stdClass()]));
+        $this->assertEquals('[{}]', $this->serialize(array(new \stdClass())));
     }
 
     public function testInlineArray()
     {
         $object = new ObjectWithInlineArray(['a' => 'b', 'c' => 'd']);
-        $serialized = $this->serialize($object);
-        self::assertEquals('{"a":"b","c":"d"}', $serialized);
-        self::assertEquals($object, $this->deserialize($serialized, ObjectWithInlineArray::class));
+
+        $this->assertEquals('{"a":"b","c":"d"}', $this->serialize($object));
     }
 
     public function testSerializeRootArrayWithDefinedKeys()
     {
-        $author1 = new Author('Jim');
-        $author2 = new Author('Mark');
+        $author1 = new Author("Jim");
+        $author2 = new Author("Mark");
 
-        $data = [
+        $data = array(
             'jim' => $author1,
             'mark' => $author2,
-        ];
+        );
 
-        self::assertEquals('{"jim":{"full_name":"Jim"},"mark":{"full_name":"Mark"}}', $this->serializer->serialize($data, $this->getFormat(), SerializationContext::create()->setInitialType('array')));
-        self::assertEquals('[{"full_name":"Jim"},{"full_name":"Mark"}]', $this->serializer->serialize($data, $this->getFormat(), SerializationContext::create()->setInitialType('array<JMS\Serializer\Tests\Fixtures\Author>')));
-        self::assertEquals('{"jim":{"full_name":"Jim"},"mark":{"full_name":"Mark"}}', $this->serializer->serialize($data, $this->getFormat(), SerializationContext::create()->setInitialType('array<string,JMS\Serializer\Tests\Fixtures\Author>')));
+        $this->assertEquals('{"jim":{"full_name":"Jim"},"mark":{"full_name":"Mark"}}', $this->serializer->serialize($data, $this->getFormat(), SerializationContext::create()->setInitialType('array')));
+        $this->assertEquals('[{"full_name":"Jim"},{"full_name":"Mark"}]', $this->serializer->serialize($data, $this->getFormat(), SerializationContext::create()->setInitialType('array<JMS\Serializer\Tests\Fixtures\Author>')));
+        $this->assertEquals('{"jim":{"full_name":"Jim"},"mark":{"full_name":"Mark"}}', $this->serializer->serialize($data, $this->getFormat(), SerializationContext::create()->setInitialType('array<string,JMS\Serializer\Tests\Fixtures\Author>')));
 
-        $data = [
+        $data = array(
             $author1,
             $author2,
-        ];
-        self::assertEquals('[{"full_name":"Jim"},{"full_name":"Mark"}]', $this->serializer->serialize($data, $this->getFormat(), SerializationContext::create()->setInitialType('array')));
-        self::assertEquals('{"0":{"full_name":"Jim"},"1":{"full_name":"Mark"}}', $this->serializer->serialize($data, $this->getFormat(), SerializationContext::create()->setInitialType('array<int,JMS\Serializer\Tests\Fixtures\Author>')));
-        self::assertEquals('{"0":{"full_name":"Jim"},"1":{"full_name":"Mark"}}', $this->serializer->serialize($data, $this->getFormat(), SerializationContext::create()->setInitialType('array<string,JMS\Serializer\Tests\Fixtures\Author>')));
+        );
+        $this->assertEquals('[{"full_name":"Jim"},{"full_name":"Mark"}]', $this->serializer->serialize($data, $this->getFormat(), SerializationContext::create()->setInitialType('array')));
+        $this->assertEquals('{"0":{"full_name":"Jim"},"1":{"full_name":"Mark"}}', $this->serializer->serialize($data, $this->getFormat(), SerializationContext::create()->setInitialType('array<int,JMS\Serializer\Tests\Fixtures\Author>')));
+        $this->assertEquals('{"0":{"full_name":"Jim"},"1":{"full_name":"Mark"}}', $this->serializer->serialize($data, $this->getFormat(), SerializationContext::create()->setInitialType('array<string,JMS\Serializer\Tests\Fixtures\Author>')));
     }
 
     public function getTypeHintedArrays()
@@ -372,37 +312,35 @@ class JsonSerializationTest extends BaseSerializationTest
             [[], '[]', SerializationContext::create()->setInitialType('array<integer>')],
             [[], '{}', SerializationContext::create()->setInitialType('array<string,integer>')],
 
+
             [[1, 2], '[1,2]', SerializationContext::create()->setInitialType('array')],
             [[1 => 1, 2 => 2], '{"1":1,"2":2}', SerializationContext::create()->setInitialType('array')],
             [[1 => 1, 2 => 2], '[1,2]', SerializationContext::create()->setInitialType('array<integer>')],
             [['a', 'b'], '["a","b"]', SerializationContext::create()->setInitialType('array<string>')],
-            [['a', 'b'], '["a","b"]', SerializationContext::create()->setInitialType('list<string>')],
 
             [[1 => 'a', 2 => 'b'], '["a","b"]', SerializationContext::create()->setInitialType('array<string>')],
             [['a' => 'a', 'b' => 'b'], '["a","b"]', SerializationContext::create()->setInitialType('array<string>')],
+
 
             [[1, 2], '{"0":1,"1":2}', SerializationContext::create()->setInitialType('array<integer,integer>')],
             [[1, 2], '{"0":1,"1":2}', SerializationContext::create()->setInitialType('array<string,integer>')],
             [[1, 2], '{"0":"1","1":"2"}', SerializationContext::create()->setInitialType('array<string,string>')],
 
+
             [['a', 'b'], '{"0":"a","1":"b"}', SerializationContext::create()->setInitialType('array<integer,string>')],
             [['a' => 'a', 'b' => 'b'], '{"a":"a","b":"b"}', SerializationContext::create()->setInitialType('array<string,string>')],
-
-            [[15.6, 2], '[15.6,2.0]', SerializationContext::create()->setInitialType('array<float>')],
-            [[5.2 * 3, 2], '[15.6,2.0]', SerializationContext::create()->setInitialType('array<float>')],
         ];
     }
 
     /**
+     * @dataProvider getTypeHintedArrays
      * @param array $array
      * @param string $expected
      * @param SerializationContext|null $context
-     *
-     * @dataProvider getTypeHintedArrays
      */
     public function testTypeHintedArraySerialization(array $array, $expected, $context = null)
     {
-        self::assertEquals($expected, $this->serialize($array, $context));
+        $this->assertEquals($expected, $this->serialize($array, $context));
     }
 
     public function getTypeHintedArraysAndStdClass()
@@ -411,7 +349,7 @@ class JsonSerializationTest extends BaseSerializationTest
         $c2 = new \stdClass();
         $c2->foo = 'bar';
 
-        $tag = new Tag('tag');
+        $tag = new Tag("tag");
 
         $c3 = new \stdClass();
         $c3->foo = $tag;
@@ -435,15 +373,14 @@ class JsonSerializationTest extends BaseSerializationTest
     }
 
     /**
+     * @dataProvider getTypeHintedArraysAndStdClass
      * @param array $array
      * @param string $expected
      * @param SerializationContext|null $context
-     *
-     * @dataProvider getTypeHintedArraysAndStdClass
      */
     public function testTypeHintedArrayAndStdClassSerialization(array $array, $expected, $context = null)
     {
-        self::assertEquals($expected, $this->serialize($array, $context));
+        $this->assertEquals($expected, $this->serialize($array, $context));
     }
 
     protected function getFormat()
@@ -454,21 +391,21 @@ class JsonSerializationTest extends BaseSerializationTest
 
 class LinkAddingSubscriber implements EventSubscriberInterface
 {
-    public function onPostSerialize(ObjectEvent $event)
+    public function onPostSerialize(Event $event)
     {
         $author = $event->getObject();
 
-        $event->getVisitor()->setData('_links', [
+        $event->getVisitor()->addData('_links', array(
             'details' => 'http://foo.bar/details/' . $author->getName(),
             'comments' => 'http://foo.bar/details/' . $author->getName() . '/comments',
-        ]);
+        ));
     }
 
     public static function getSubscribedEvents()
     {
-        return [
-            ['event' => 'serializer.post_serialize', 'method' => 'onPostSerialize', 'format' => 'json', 'class' => 'JMS\Serializer\Tests\Fixtures\Author'],
-        ];
+        return array(
+            array('event' => 'serializer.post_serialize', 'method' => 'onPostSerialize', 'format' => 'json', 'class' => 'JMS\Serializer\Tests\Fixtures\Author'),
+        );
     }
 }
 
@@ -481,8 +418,8 @@ class ReplaceNameSubscriber implements EventSubscriberInterface
 
     public static function getSubscribedEvents()
     {
-        return [
-            ['event' => 'serializer.post_serialize', 'method' => 'onPostSerialize', 'format' => 'json', 'class' => 'JMS\Serializer\Tests\Fixtures\Author'],
-        ];
+        return array(
+            array('event' => 'serializer.post_serialize', 'method' => 'onPostSerialize', 'format' => 'json', 'class' => 'JMS\Serializer\Tests\Fixtures\Author'),
+        );
     }
 }

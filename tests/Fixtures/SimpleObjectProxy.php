@@ -1,27 +1,25 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
-use Doctrine\Persistence\Proxy;
+use Doctrine\Common\Persistence\Proxy;
 
 class SimpleObjectProxy extends SimpleObject implements Proxy
 {
-    private $isInitialized = false;
+    public $__isInitialized__ = false;
 
     private $baz = 'baz';
 
     public function __load()
     {
-        if (!$this->isInitialized) {
+        if (!$this->__isInitialized__) {
             $this->camelCase = 'proxy-boo';
-            $this->isInitialized = true;
+            $this->__isInitialized__ = true;
         }
     }
 
     public function __isInitialized()
     {
-        return $this->isInitialized;
+        return $this->__isInitialized__;
     }
 }

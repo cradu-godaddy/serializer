@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation\Type;
@@ -12,31 +10,26 @@ use JMS\Serializer\Annotation\XmlNamespace;
  * @XmlNamespace(prefix="old_foo", uri="http://foo.example.org");
  * @XmlNamespace(prefix="foo", uri="http://better.foo.example.org");
  */
-#[XmlNamespace(prefix: 'old_foo', uri: 'http://foo.example.org')]
-#[XmlNamespace(prefix: 'foo', uri: 'http://better.foo.example.org')]
-class SimpleSubClassObject extends SimpleClassObject
+class SimpleSubClassObject
+    extends SimpleClassObject
 {
+
     /**
      * @Type("string")
      * @XmlElement(namespace="http://better.foo.example.org")
      */
-    #[Type(name: 'string')]
-    #[XmlElement(namespace: 'http://better.foo.example.org')]
     public $moo;
 
     /**
      * @Type("string")
      * @XmlElement(namespace="http://foo.example.org")
      */
-    #[Type(name: 'string')]
-    #[XmlElement(namespace: 'http://foo.example.org')]
     public $baz;
 
     /**
      * @Type("string")
      * @XmlElement(namespace="http://new.foo.example.org")
      */
-    #[Type(name: 'string')]
-    #[XmlElement(namespace: 'http://new.foo.example.org')]
     public $qux;
+
 }

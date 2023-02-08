@@ -1,23 +1,20 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation\Type;
+
 
 class ObjectWithObjectProperty
 {
     /**
      * @Type("string")
      */
-    #[Type(name: 'string')]
     private $foo;
 
     /**
      * @Type("JMS\Serializer\Tests\Fixtures\Author")
      */
-    #[Type(name: 'JMS\Serializer\Tests\Fixtures\Author')]
     private $author;
 
     /**
@@ -29,10 +26,12 @@ class ObjectWithObjectProperty
     }
 
     /**
-     * @return Author
+     * @return \JMS\Serializer\Tests\Fixtures\Author
      */
     public function getAuthor()
     {
         return $this->author;
     }
+
+
 }

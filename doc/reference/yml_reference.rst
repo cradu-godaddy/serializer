@@ -8,7 +8,6 @@ YAML Reference
         xml_root_name: foobar
         xml_root_namespace: http://your.default.namespace
         exclude: true
-        exclude_if: expr
         read_only: false
         access_type: public_method # defaults to property
         accessor_order: custom
@@ -25,11 +24,9 @@ YAML Reference
                 namespace: http://www.w3.org/2005/Atom
         virtual_properties:
             getSomeProperty:
-                name: optional-prop-name
                 serialized_name: foo
                 type: integer
             expression_prop:
-                name: optional-prop-name
                 exp: object.getName()
                 serialized_name: foo
                 type: integer
@@ -71,6 +68,13 @@ YAML Reference
                     cdata: false
                     namespace: http://www.w3.org/2005/Atom
                 max_depth: 2
+
+        handler_callbacks:
+            serialization:
+                xml: serializeToXml
+                json: serializeToJson
+            deserialization:
+                xml: deserializeFromXml
 
         callback_methods:
             pre_serialize: [foo, bar]

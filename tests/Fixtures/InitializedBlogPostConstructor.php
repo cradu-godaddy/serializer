@@ -1,28 +1,18 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
-use JMS\Serializer\Construction\ObjectConstructorInterface;
 use JMS\Serializer\Construction\UnserializeObjectConstructor;
 use JMS\Serializer\DeserializationContext;
 use JMS\Serializer\Metadata\ClassMetadata;
-use JMS\Serializer\Visitor\DeserializationVisitorInterface;
+use JMS\Serializer\VisitorInterface;
 
-class InitializedBlogPostConstructor implements ObjectConstructorInterface
+class InitializedBlogPostConstructor extends UnserializeObjectConstructor
 {
-    private $fallback;
-
-    public function __construct()
+    public function construct(VisitorInterface $visitor, ClassMetadata $metadata, $data, array $type, DeserializationContext $context)
     {
-        $this->fallback = new UnserializeObjectConstructor();
-    }
-
-    public function construct(DeserializationVisitorInterface $visitor, ClassMetadata $metadata, $data, array $type, DeserializationContext $context): ?object
-    {
-        if ('JMS\Serializer\Tests\Fixtures\BlogPost' !== $type['name']) {
-            return $this->fallback->construct($visitor, $metadata, $data, $type, $context);
+        if ($type['name'] !== 'JMS\Serializer\Tests\Fixtures\BlogPost') {
+            return parent::construct($visitor, $metadata, $data, $type);
         }
 
         return new BlogPost('This is a nice title.', new Author('Foo Bar'), new \DateTime('2011-07-30 00:00', new \DateTimeZone('UTC')), new Publisher('Bar Foo'));

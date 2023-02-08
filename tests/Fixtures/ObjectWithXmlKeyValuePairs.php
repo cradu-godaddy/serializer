@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation\XmlKeyValuePairs;
@@ -12,20 +10,21 @@ class ObjectWithXmlKeyValuePairs
      * @var array
      * @XmlKeyValuePairs
      */
-    #[XmlKeyValuePairs]
-    private $array = [
+    private $array = array(
         'key-one' => 'foo',
         'key-two' => 1,
-        'nested-array' => ['bar' => 'foo'],
-        'without-keys' => [
+        'nested-array' => array(
+            'bar' => 'foo',
+        ),
+        'without-keys' => array(
             1,
-            'test',
-        ],
-        'mixed' => [
+            'test'
+        ),
+        'mixed' => array(
             'test',
             'foo' => 'bar',
-            '1_foo' => 'bar',
-        ],
-        1 => 'foo',
-    ];
+            '1_foo' => 'bar'
+        ),
+        1 => 'foo'
+    );
 }

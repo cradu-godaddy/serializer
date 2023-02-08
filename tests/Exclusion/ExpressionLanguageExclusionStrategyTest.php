@@ -1,26 +1,23 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Exclusion;
 
 use JMS\Serializer\Exclusion\ExpressionLanguageExclusionStrategy;
 use JMS\Serializer\Expression\ExpressionEvaluator;
 use JMS\Serializer\Metadata\StaticPropertyMetadata;
 use JMS\Serializer\SerializationContext;
-use PHPUnit\Framework\TestCase;
 
 /**
  * @author Asmir Mustafic <goetas@gmail.com>
  */
-class ExpressionLanguageExclusionStrategyTest extends TestCase
+class ExpressionLanguageExclusionStrategyTest extends \PHPUnit_Framework_TestCase
 {
     private $visitedObject;
     private $context;
     private $expressionEvaluator;
     private $exclusionStrategy;
 
-    protected function setUp(): void
+    public function setUp()
     {
         $this->visitedObject = new \stdClass();
 
@@ -41,14 +38,14 @@ class ExpressionLanguageExclusionStrategyTest extends TestCase
 
         $this->expressionEvaluator->expects($this->once())
             ->method('evaluate')
-            ->with('foo', [
+            ->with('foo', array(
                 'context' => $this->context,
                 'property_metadata' => $metadata,
                 'object' => $this->visitedObject,
-            ])
+            ))
             ->willReturn(true);
 
-        self::assertTrue($this->exclusionStrategy->shouldSkipProperty($metadata, $this->context));
+        $this->assertSame(true, $this->exclusionStrategy->shouldSkipProperty($metadata, $this->context));
     }
 
     public function testExpressionLanguageSkipsWhenNoExpression()
@@ -57,6 +54,6 @@ class ExpressionLanguageExclusionStrategyTest extends TestCase
 
         $this->expressionEvaluator->expects($this->never())->method('evaluate');
 
-        self::assertFalse($this->exclusionStrategy->shouldSkipProperty($metadata, $this->context));
+        $this->assertSame(false, $this->exclusionStrategy->shouldSkipProperty($metadata, $this->context));
     }
 }

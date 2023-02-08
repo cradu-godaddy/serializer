@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation\Groups;
@@ -16,80 +14,66 @@ use JMS\Serializer\Annotation\XmlValue;
 
 class ObjectWithVirtualXmlProperties
 {
+
     /**
+     *
      * @VirtualProperty
      * @SerializedName("foo")
      * @Groups({"attributes"})
      * @XmlAttribute
      */
-    #[VirtualProperty]
-    #[SerializedName(name: 'foo')]
-    #[Groups(groups: ['attributes'])]
-    #[XmlAttribute]
-    public function getVirtualXmlAttributeValue()
+    public function getVirualXmlAttributeValue()
     {
         return 'bar';
     }
 
     /**
+     *
      * @VirtualProperty
      * @SerializedName("xml-value")
      * @Groups({"values"})
      * @XmlValue
      */
-    #[VirtualProperty]
-    #[SerializedName(name: 'xml-value')]
-    #[Groups(groups: ['values'])]
-    #[XmlValue]
-    public function getVirtualXmlValue()
+    public function getVirualXmlValue()
     {
         return 'xml-value';
     }
 
     /**
+     *
      * @VirtualProperty
      * @SerializedName("list")
      * @Groups({"list"})
      * @XmlList(inline = true, entry = "val")
      */
-    #[VirtualProperty]
-    #[SerializedName(name: 'list')]
-    #[Groups(groups: ['list'])]
-    #[XmlList(entry: 'val', inline: true)]
-    public function getVirtualXmlList()
+    public function getVirualXmlList()
     {
-        return ['One', 'Two'];
+        return array('One', 'Two');
     }
 
     /**
+     *
      * @VirtualProperty
      * @SerializedName("map")
      * @Groups({"map"})
      * @XmlMap(keyAttribute = "key")
      */
-    #[VirtualProperty]
-    #[SerializedName(name: 'map')]
-    #[Groups(groups: ['map'])]
-    #[XmlMap(keyAttribute: 'key')]
-    public function getVirtualXmlMap()
+    public function getVirualXmlMap()
     {
-        return [
+        return array(
             'key-one' => 'One',
-            'key-two' => 'Two',
-        ];
+            'key-two' => 'Two'
+        );
     }
 
     /**
+     *
      * @VirtualProperty
      * @SerializedName("low")
      * @Groups({"versions"})
      * @Until("8")
      */
-    #[VirtualProperty]
-    #[SerializedName(name: 'low')]
-    #[Groups(groups: ['versions'])]
-    #[Until(version: '8')]
-    public function getVirtualLowValue()
+    public function getVirualLowValue()
     {
         return 1;
     }
@@ -100,12 +84,9 @@ class ObjectWithVirtualXmlProperties
      * @Groups({"versions"})
      * @Since("8")
      */
-    #[VirtualProperty]
-    #[SerializedName(name: 'hight')]
-    #[Groups(groups: ['versions'])]
-    #[Since(version: '8')]
-    public function getVirtualHighValue()
+    public function getVirualHighValue()
     {
         return 8;
     }
+
 }

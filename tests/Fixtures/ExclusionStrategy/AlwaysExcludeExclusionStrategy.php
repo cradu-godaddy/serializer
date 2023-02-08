@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures\ExclusionStrategy;
 
 use JMS\Serializer\Context;
@@ -11,12 +9,12 @@ use JMS\Serializer\Metadata\PropertyMetadata;
 
 class AlwaysExcludeExclusionStrategy implements ExclusionStrategyInterface
 {
-    public function shouldSkipClass(ClassMetadata $metadata, Context $context): bool
+    public function shouldSkipClass(ClassMetadata $metadata, Context $context)
     {
         return true;
     }
 
-    public function shouldSkipProperty(PropertyMetadata $property, Context $context): bool
+    public function shouldSkipProperty(PropertyMetadata $property, Context $context)
     {
         return false;
     }

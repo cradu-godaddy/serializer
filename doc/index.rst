@@ -1,11 +1,9 @@
 Serializer
 ==========
 
-.. image:: logo-small.png
-
 Introduction
 ------------
-This library allows you to (de-)serialize data of any complexity. Currently, it supports XML and JSON.
+This library allows you to (de-)serialize data of any complexity. Currently, it supports XML, JSON, and YAML.
 
 It also provides you with a rich tool-set to adapt the output to your specific needs.
 
@@ -15,7 +13,7 @@ Built-in features include:
 - Supports many built-in PHP types (such as dates)
 - Integrates with Doctrine ORM, et. al.
 - Supports versioning, e.g. for APIs
-- Configurable via XML, YAML, or Doctrine Annotations
+- Configurable via PHP, XML, YAML, or Doctrine Annotations
 
 Installation
 ------------
@@ -35,12 +33,11 @@ For standalone projects usage of the provided builder is encouraged::
     $jsonContent = $serializer->serialize($data, 'json');
     echo $jsonContent; // or return it in a Response
 
-
 Documentation
 -------------
 
 .. toctree ::
-    :maxdepth: 2
+    :hidden:
 
     configuration
     usage
@@ -48,6 +45,19 @@ Documentation
     handlers
     reference
     cookbook
+
+- :doc:`Configuration <configuration>`
+- :doc:`Usage <usage>`
+- :doc:`Events <event_system>`
+- :doc:`Handlers <handlers>`
+
+- Recipes
+    * :doc:`/cookbook/exclusion_strategies`
+
+- Reference
+    * :doc:`Annotations </reference/annotations>`
+    * :doc:`XML Reference </reference/xml_reference>`
+    * :doc:`YML Reference </reference/yml_reference>`
 
 License
 -------

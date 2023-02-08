@@ -1,14 +1,11 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Metadata\Driver;
 
 use JMS\Serializer\Metadata\ClassMetadata;
 use JMS\Serializer\Metadata\Driver\NullDriver;
-use PHPUnit\Framework\TestCase;
 
-class NullDriverTest extends TestCase
+class NullDriverTest extends \PHPUnit_Framework_TestCase
 {
     public function testReturnsValidMetadata()
     {
@@ -16,7 +13,7 @@ class NullDriverTest extends TestCase
 
         $metadata = $driver->loadMetadataForClass(new \ReflectionClass('stdClass'));
 
-        self::assertInstanceOf(ClassMetadata::class, $metadata);
-        self::assertCount(0, $metadata->propertyMetadata);
+        $this->assertInstanceOf(ClassMetadata::class, $metadata);
+        $this->assertCount(0, $metadata->propertyMetadata);
     }
 }

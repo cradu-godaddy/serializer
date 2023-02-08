@@ -1,43 +1,38 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Serializer;
 
 use Doctrine\Common\Annotations\AnnotationReader;
 use JMS\Serializer\Construction\UnserializeObjectConstructor;
 use JMS\Serializer\DeserializationContext;
 use JMS\Serializer\Handler\HandlerRegistry;
+use JMS\Serializer\JsonDeserializationVisitor;
+use JMS\Serializer\JsonSerializationVisitor;
 use JMS\Serializer\Metadata\Driver\AnnotationDriver;
 use JMS\Serializer\Naming\CamelCaseNamingStrategy;
 use JMS\Serializer\Naming\SerializedNameAnnotationStrategy;
 use JMS\Serializer\SerializationContext;
-use JMS\Serializer\SerializerBuilder;
-use JMS\Serializer\Visitor\Factory\JsonDeserializationVisitorFactory;
-use JMS\Serializer\Visitor\Factory\JsonSerializationVisitorFactory;
+use JMS\Serializer\Serializer;
 use Metadata\MetadataFactory;
-use PHPUnit\Framework\TestCase;
+use PhpCollection\Map;
 
-class SerializationContextFactoryTest extends TestCase
+class SerializationContextFactoryTest extends \PHPUnit_Framework_TestCase
 {
     protected $serializer;
-    protected $metadataFactory;
-    protected $handlerRegistry;
-    protected $unserializeObjectConstructor;
-    protected $serializationVisitors;
-    protected $deserializationVisitors;
 
-    protected function setUp(): void
+    public function setUp()
     {
         parent::setUp();
 
         $namingStrategy = new SerializedNameAnnotationStrategy(new CamelCaseNamingStrategy());
-        $this->metadataFactory = new MetadataFactory(new AnnotationDriver(new AnnotationReader(), $namingStrategy));
-        $this->handlerRegistry = new HandlerRegistry();
-        $this->unserializeObjectConstructor = new UnserializeObjectConstructor();
 
-        $this->serializationVisitors = ['json' => new JsonSerializationVisitorFactory()];
-        $this->deserializationVisitors = ['json' => new JsonDeserializationVisitorFactory()];
+        $this->serializer = new Serializer(
+            new MetadataFactory(new AnnotationDriver(new AnnotationReader())),
+            new HandlerRegistry(),
+            new UnserializeObjectConstructor(),
+            new Map(array('json' => new JsonSerializationVisitor($namingStrategy))),
+            new Map(array('json' => new JsonDeserializationVisitor($namingStrategy)))
+        );
     }
 
     public function testSerializeUseProvidedSerializationContext()
@@ -51,13 +46,11 @@ class SerializationContextFactoryTest extends TestCase
             ->method('createSerializationContext')
             ->will($this->returnValue($context));
 
-        $builder = SerializerBuilder::create();
-        $builder->setSerializationContextFactory($contextFactoryMock);
-        $serializer = $builder->build();
+        $this->serializer->setSerializationContextFactory($contextFactoryMock);
 
-        $result = $serializer->serialize(['value' => null], 'json');
+        $result = $this->serializer->serialize(array('value' => null), 'json');
 
-        self::assertEquals('{"value":null}', $result);
+        $this->assertEquals('{"value":null}', $result);
     }
 
     public function testDeserializeUseProvidedDeserializationContext()
@@ -70,13 +63,11 @@ class SerializationContextFactoryTest extends TestCase
             ->method('createDeserializationContext')
             ->will($this->returnValue($context));
 
-        $builder = SerializerBuilder::create();
-        $builder->setDeserializationContextFactory($contextFactoryMock);
-        $serializer = $builder->build();
+        $this->serializer->setDeserializationContextFactory($contextFactoryMock);
 
-        $result = $serializer->deserialize('{"value":null}', 'array', 'json');
+        $result = $this->serializer->deserialize('{"value":null}', 'array', 'json');
 
-        self::assertEquals(['value' => null], $result);
+        $this->assertEquals(array('value' => null), $result);
     }
 
     public function testToArrayUseProvidedSerializationContext()
@@ -90,13 +81,11 @@ class SerializationContextFactoryTest extends TestCase
             ->method('createSerializationContext')
             ->will($this->returnValue($context));
 
-        $builder = SerializerBuilder::create();
-        $builder->setSerializationContextFactory($contextFactoryMock);
-        $serializer = $builder->build();
+        $this->serializer->setSerializationContextFactory($contextFactoryMock);
 
-        $result = $serializer->toArray(['value' => null]);
+        $result = $this->serializer->toArray(array('value' => null));
 
-        self::assertEquals(['value' => null], $result);
+        $this->assertEquals(array('value' => null), $result);
     }
 
     public function testFromArrayUseProvidedDeserializationContext()
@@ -109,12 +98,10 @@ class SerializationContextFactoryTest extends TestCase
             ->method('createDeserializationContext')
             ->will($this->returnValue($context));
 
-        $builder = SerializerBuilder::create();
-        $builder->setDeserializationContextFactory($contextFactoryMock);
-        $serializer = $builder->build();
+        $this->serializer->setDeserializationContextFactory($contextFactoryMock);
 
-        $result = $serializer->fromArray(['value' => null], 'array');
+        $result = $this->serializer->fromArray(array('value' => null), 'array');
 
-        self::assertEquals(['value' => null], $result);
+        $this->assertEquals(array('value' => null), $result);
     }
 }

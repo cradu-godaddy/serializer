@@ -5,7 +5,9 @@
       <entry>
         <children>
           <entry>
-            <children/>
+            <children>
+              <entry/>
+            </children>
             <foo><![CDATA[bar]]></foo>
           </entry>
         </children>

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation\Exclude;
@@ -15,19 +13,16 @@ class ObjectWithLifecycleCallbacks
     /**
      * @Exclude
      */
-    #[Exclude]
     private $firstname;
 
     /**
      * @Exclude
      */
-    #[Exclude]
     private $lastname;
 
     /**
      * @Type("string")
      */
-    #[Type(name: 'string')]
     private $name;
 
     public function __construct($firstname = 'Foo', $lastname = 'Bar')
@@ -57,7 +52,7 @@ class ObjectWithLifecycleCallbacks
      */
     private function afterDeserialization()
     {
-        [$this->firstname, $this->lastname] = explode(' ', $this->name);
+        list($this->firstname, $this->lastname) = explode(' ', $this->name);
         $this->name = null;
     }
 }

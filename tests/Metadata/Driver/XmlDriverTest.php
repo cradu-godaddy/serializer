@@ -1,28 +1,23 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Metadata\Driver;
 
-use JMS\Serializer\Exception\InvalidMetadataException;
 use JMS\Serializer\Metadata\Driver\XmlDriver;
 use JMS\Serializer\Metadata\PropertyMetadata;
-use JMS\Serializer\Naming\IdenticalPropertyNamingStrategy;
-use Metadata\Driver\DriverInterface;
 use Metadata\Driver\FileLocator;
 
 class XmlDriverTest extends BaseDriverTest
 {
+    /**
+     * @expectedException JMS\Serializer\Exception\XmlErrorException
+     * @expectedExceptionMessage [FATAL] Start tag expected, '<' not found
+     */
     public function testInvalidXml()
     {
         $driver = $this->getDriver();
 
         $ref = new \ReflectionMethod($driver, 'loadMetadataFromFile');
         $ref->setAccessible(true);
-
-        $this->expectException(InvalidMetadataException::class);
-        $this->expectExceptionMessage('Invalid XML content for metadata');
-
         $ref->invoke($driver, new \ReflectionClass('stdClass'), __DIR__ . '/xml/invalid.xml');
     }
 
@@ -30,11 +25,11 @@ class XmlDriverTest extends BaseDriverTest
     {
         $m = $this->getDriver('exclude_all')->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\BlogPost'));
 
-        self::assertArrayHasKey('title', $m->propertyMetadata);
+        $this->assertArrayHasKey('title', $m->propertyMetadata);
 
-        $excluded = ['createdAt', 'published', 'comments', 'author'];
+        $excluded = array('createdAt', 'published', 'comments', 'author');
         foreach ($excluded as $key) {
-            self::assertArrayNotHasKey($key, $m->propertyMetadata);
+            $this->assertArrayNotHasKey($key, $m->propertyMetadata);
         }
     }
 
@@ -42,11 +37,11 @@ class XmlDriverTest extends BaseDriverTest
     {
         $m = $this->getDriver('exclude_none')->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\BlogPost'));
 
-        self::assertArrayNotHasKey('title', $m->propertyMetadata);
+        $this->assertArrayNotHasKey('title', $m->propertyMetadata);
 
-        $excluded = ['createdAt', 'published', 'comments', 'author'];
+        $excluded = array('createdAt', 'published', 'comments', 'author');
         foreach ($excluded as $key) {
-            self::assertArrayHasKey($key, $m->propertyMetadata);
+            $this->assertArrayHasKey($key, $m->propertyMetadata);
         }
     }
 
@@ -55,9 +50,8 @@ class XmlDriverTest extends BaseDriverTest
         $m = $this->getDriver('case')->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\BlogPost'));
 
         $p = new PropertyMetadata($m->name, 'title');
-        $p->serializedName = 'title';
-        $p->type = ['name' => 'string', 'params' => []];
-        self::assertEquals($p, $m->propertyMetadata['title']);
+        $p->type = array('name' => 'string', 'params' => array());
+        $this->assertEquals($p, $m->propertyMetadata['title']);
     }
 
     public function testAccessorAttributes()
@@ -65,45 +59,38 @@ class XmlDriverTest extends BaseDriverTest
         $m = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\GetSetObject'));
 
         $p = new PropertyMetadata($m->name, 'name');
-        $p->type = ['name' => 'string', 'params' => []];
+        $p->type = array('name' => 'string', 'params' => array());
         $p->getter = 'getTrimmedName';
         $p->setter = 'setCapitalizedName';
-        $p->serializedName = 'name';
 
-        self::assertEquals($p, $m->propertyMetadata['name']);
+        $this->assertEquals($p, $m->propertyMetadata['name']);
     }
 
     public function testGroupsTrim()
     {
         $first = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\GroupsTrim'));
 
-        self::assertArrayHasKey('amount', $first->propertyMetadata);
-        self::assertContains('first.test.group', $first->propertyMetadata['currency']->groups);
-        self::assertContains('second.test.group', $first->propertyMetadata['currency']->groups);
+        $this->assertArrayHasKey('amount', $first->propertyMetadata);
+        $this->assertArraySubset(['first.test.group', 'second.test.group'], $first->propertyMetadata['currency']->groups);
     }
 
     public function testMultilineGroups()
     {
         $first = $this->getDriver()->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\MultilineGroupsFormat'));
 
-        self::assertArrayHasKey('amount', $first->propertyMetadata);
-        self::assertContains('first.test.group', $first->propertyMetadata['currency']->groups);
-        self::assertContains('second.test.group', $first->propertyMetadata['currency']->groups);
+        $this->assertArrayHasKey('amount', $first->propertyMetadata);
+        $this->assertArraySubset(['first.test.group', 'second.test.group'], $first->propertyMetadata['currency']->groups);
     }
 
-    /**
-     * @return XmlDriver
-     */
-    protected function getDriver(?string $subDir = null, bool $addUnderscoreDir = true): DriverInterface
+    protected function getDriver()
     {
-        $dirs = [
-            'JMS\Serializer\Tests\Fixtures' => __DIR__ . '/xml' . ($subDir ? '/' . $subDir : ''),
-        ];
-
-        if ($addUnderscoreDir) {
-            $dirs[''] = __DIR__ . '/xml/_' . ($subDir ? '/' . $subDir : '');
+        $append = '';
+        if (func_num_args() == 1) {
+            $append = '/' . func_get_arg(0);
         }
 
-        return new XmlDriver(new FileLocator($dirs), new IdenticalPropertyNamingStrategy(), null, $this->getExpressionEvaluator());
+        return new XmlDriver(new FileLocator(array(
+            'JMS\Serializer\Tests\Fixtures' => __DIR__ . '/xml' . $append,
+        )));
     }
 }

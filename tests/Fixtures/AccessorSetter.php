@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation as Serializer;
@@ -9,25 +7,18 @@ use JMS\Serializer\Annotation as Serializer;
 class AccessorSetter
 {
     /**
+     * @var \stdClass
      * @Serializer\Type("JMS\Serializer\Tests\Fixtures\AccessorSetterElement")
      * @Serializer\Accessor(setter="setElementDifferent")
-     *
-     * @var \stdClass
      */
-    #[Serializer\Type(name: 'JMS\Serializer\Tests\Fixtures\AccessorSetterElement')]
-    #[Serializer\Accessor(setter: 'setElementDifferent')]
     protected $element;
 
     /**
+     * @var array
      * @Serializer\Type("array<string>")
      * @Serializer\Accessor(setter="setCollectionDifferent")
      * @Serializer\XmlList(inline=false)
-     *
-     * @var array
      */
-    #[Serializer\Type(name: 'array<string>')]
-    #[Serializer\Accessor(setter: 'setCollectionDifferent')]
-    #[Serializer\XmlList(inline: false)]
     protected $collection;
 
     /**
@@ -38,6 +29,9 @@ class AccessorSetter
         return $this->element;
     }
 
+    /**
+     * @param AccessorSetterElement $element
+     */
     public function setElementDifferent(AccessorSetterElement $element)
     {
         $this->element = new \stdClass();
@@ -64,27 +58,19 @@ class AccessorSetter
 class AccessorSetterElement
 {
     /**
+     * @var string
      * @Serializer\Type("string")
      * @Serializer\Accessor(setter="setAttributeDifferent")
      * @Serializer\XmlAttribute
-     *
-     * @var string
      */
-    #[Serializer\Type(name: 'string')]
-    #[Serializer\Accessor(setter: 'setAttributeDifferent')]
-    #[Serializer\XmlAttribute]
     protected $attribute;
 
     /**
+     * @var string
      * @Serializer\Type("string")
      * @Serializer\Accessor(setter="setElementDifferent")
      * @Serializer\XmlValue
-     *
-     * @var string
      */
-    #[Serializer\Type(name: 'string')]
-    #[Serializer\Accessor(setter: 'setElementDifferent')]
-    #[Serializer\XmlValue]
     protected $element;
 
     /**
@@ -100,15 +86,16 @@ class AccessorSetterElement
      */
     public function setAttributeDifferent($attribute)
     {
-        $this->attribute = $attribute . '-different';
+        $this->attribute = $attribute . "-different";
     }
+
 
     /**
      * @param string $element
      */
     public function setElementDifferent($element)
     {
-        $this->element = $element . '-different';
+        $this->element = $element . "-different";
     }
 
     /**

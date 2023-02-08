@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures\DoctrinePHPCR;
 
 use Doctrine\ODM\PHPCR\Mapping\Annotations as PHPCRODM;
@@ -19,7 +17,6 @@ class Author
      * @PHPCRODM\Field(type="string")
      * @SerializedName("full_name")
      */
-    #[SerializedName(name: 'full_name')]
     private $name;
 
     public function __construct($name)

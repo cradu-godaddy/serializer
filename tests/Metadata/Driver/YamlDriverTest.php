@@ -1,121 +1,81 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Metadata\Driver;
 
-use JMS\Serializer\Exception\InvalidMetadataException;
 use JMS\Serializer\Metadata\Driver\YamlDriver;
 use JMS\Serializer\Metadata\PropertyMetadata;
-use JMS\Serializer\Naming\IdenticalPropertyNamingStrategy;
-use JMS\Serializer\Tests\Fixtures\BlogPost;
-use JMS\Serializer\Tests\Fixtures\Person;
-use Metadata\Driver\DriverInterface;
 use Metadata\Driver\FileLocator;
 
 class YamlDriverTest extends BaseDriverTest
 {
-    public function testAccessorOrderIsInferred(): void
+    public function testAccessorOrderIsInferred()
     {
-        $m = $this->getDriver('accessor_inferred')->loadMetadataForClass(new \ReflectionClass(Person::class));
-        self::assertEquals(['age', 'name'], array_keys($m->propertyMetadata));
+        $m = $this->getDriverForSubDir('accessor_inferred')->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\Person'));
+        $this->assertEquals(array('age', 'name'), array_keys($m->propertyMetadata));
     }
 
-    public function testShortExposeSyntax(): void
+    public function testShortExposeSyntax()
     {
-        $m = $this->getDriver('short_expose')->loadMetadataForClass(new \ReflectionClass(Person::class));
+        $m = $this->getDriverForSubDir('short_expose')->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\Person'));
 
-        self::assertArrayHasKey('name', $m->propertyMetadata);
-        self::assertArrayNotHasKey('age', $m->propertyMetadata);
+        $this->assertArrayHasKey('name', $m->propertyMetadata);
+        $this->assertArrayNotHasKey('age', $m->propertyMetadata);
     }
 
-    public function testBlogPost(): void
+    public function testBlogPost()
     {
-        $m = $this->getDriver('exclude_all')->loadMetadataForClass(new \ReflectionClass(BlogPost::class));
+        $m = $this->getDriverForSubDir('exclude_all')->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\BlogPost'));
 
-        self::assertArrayHasKey('title', $m->propertyMetadata);
+        $this->assertArrayHasKey('title', $m->propertyMetadata);
 
-        $excluded = ['createdAt', 'published', 'comments', 'author'];
+        $excluded = array('createdAt', 'published', 'comments', 'author');
         foreach ($excluded as $key) {
-            self::assertArrayNotHasKey($key, $m->propertyMetadata);
+            $this->assertArrayNotHasKey($key, $m->propertyMetadata);
         }
     }
 
-    public function testBlogPostExcludeNoneStrategy(): void
+    public function testBlogPostExcludeNoneStrategy()
     {
-        $m = $this->getDriver('exclude_none')->loadMetadataForClass(new \ReflectionClass(BlogPost::class));
+        $m = $this->getDriverForSubDir('exclude_none')->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\BlogPost'));
 
-        self::assertArrayNotHasKey('title', $m->propertyMetadata);
+        $this->assertArrayNotHasKey('title', $m->propertyMetadata);
 
-        $excluded = ['createdAt', 'published', 'comments', 'author'];
+        $excluded = array('createdAt', 'published', 'comments', 'author');
         foreach ($excluded as $key) {
-            self::assertArrayHasKey($key, $m->propertyMetadata);
+            $this->assertArrayHasKey($key, $m->propertyMetadata);
         }
     }
 
-    public function testBlogPostCaseInsensitive(): void
+    public function testBlogPostCaseInsensitive()
     {
-        $m = $this->getDriver('case')->loadMetadataForClass(new \ReflectionClass(BlogPost::class));
+        $m = $this->getDriverForSubDir('case')->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\BlogPost'));
 
         $p = new PropertyMetadata($m->name, 'title');
-        $p->serializedName = 'title';
-        $p->type = ['name' => 'string', 'params' => []];
-        self::assertEquals($p, $m->propertyMetadata['title']);
+        $p->type = array('name' => 'string', 'params' => array());
+        $this->assertEquals($p, $m->propertyMetadata['title']);
     }
 
-    public function testBlogPostAccessor(): void
+    public function testBlogPostAccessor()
     {
-        $m = $this->getDriver('accessor')->loadMetadataForClass(new \ReflectionClass(BlogPost::class));
+        $m = $this->getDriverForSubDir('accessor')->loadMetadataForClass(new \ReflectionClass('JMS\Serializer\Tests\Fixtures\BlogPost'));
 
-        self::assertArrayHasKey('title', $m->propertyMetadata);
+        $this->assertArrayHasKey('title', $m->propertyMetadata);
 
         $p = new PropertyMetadata($m->name, 'title');
         $p->getter = 'getOtherTitle';
         $p->setter = 'setOtherTitle';
-        $p->serializedName = 'title';
-        self::assertEquals($p, $m->propertyMetadata['title']);
+        $this->assertEquals($p, $m->propertyMetadata['title']);
     }
 
-    public function testInvalidMetadataFileCausesException(): void
+    private function getDriverForSubDir($subDir = null)
     {
-        $this->expectException(InvalidMetadataException::class);
-
-        $this->getDriver('invalid_metadata')->loadMetadataForClass(new \ReflectionClass(BlogPost::class));
-    }
-
-    public function testLoadingYamlFileWithLongExtension(): void
-    {
-        $m = $this->getDriver('multiple_types')->loadMetadataForClass(new \ReflectionClass(Person::class));
-
-        self::assertArrayHasKey('name', $m->propertyMetadata);
-    }
-
-    public function testLoadingMultipleMetadataExtensions(): void
-    {
-        $classNames = $this->getDriver('multiple_types', false)->getAllClassNames();
-
-        self::assertEquals(
-            [
-                BlogPost::class,
-                Person::class,
-            ],
-            $classNames
-        );
-    }
-
-    /**
-     * @return YamlDriver
-     */
-    protected function getDriver(?string $subDir = null, bool $addUnderscoreDir = true): DriverInterface
-    {
-        $dirs = [
+        return new YamlDriver(new FileLocator(array(
             'JMS\Serializer\Tests\Fixtures' => __DIR__ . '/yml' . ($subDir ? '/' . $subDir : ''),
-        ];
+        )));
+    }
 
-        if ($addUnderscoreDir) {
-            $dirs[''] = __DIR__ . '/yml/_' . ($subDir ? '/' . $subDir : '');
-        }
-
-        return new YamlDriver(new FileLocator($dirs), new IdenticalPropertyNamingStrategy(), null, $this->getExpressionEvaluator());
+    protected function getDriver()
+    {
+        return $this->getDriverForSubDir();
     }
 }

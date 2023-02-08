@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation\Groups;
@@ -13,7 +11,5 @@ class InvalidGroupsObject
      * @Groups({"foo, bar"})
      * @Type("string")
      */
-    #[Groups(groups: ['foo, bar'])]
-    #[Type(name: 'string')]
     private $foo;
 }

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation\XmlValue;
@@ -10,7 +8,6 @@ use JMS\Serializer\Annotation\XmlValue;
 class InvalidUsageOfXmlValue
 {
     /** @XmlValue */
-    #[XmlValue]
     private $value = 'bar';
 
     private $element = 'foo';

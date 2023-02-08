@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation\Type;
@@ -9,11 +7,9 @@ use JMS\Serializer\Annotation\Type;
 class CircularReferenceChild
 {
     /** @Type("string") */
-    #[Type(name: 'string')]
     private $name;
 
     /** @Type("JMS\Serializer\Tests\Fixtures\CircularReferenceParent") */
-    #[Type(name: 'JMS\Serializer\Tests\Fixtures\CircularReferenceParent')]
     private $parent;
 
     public function __construct($name, CircularReferenceParent $parent)

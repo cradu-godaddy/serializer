@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation\Type;
@@ -14,11 +12,9 @@ class NamedDateTimeImmutableArraysObject
      * @Type("array<string,DateTimeImmutable<'d.m.Y H:i:s'>>")
      * @XmlKeyValuePairs
      */
-    #[Type(name: 'array<string,DateTimeImmutable<"d.m.Y H:i:s">>')]
-    #[XmlKeyValuePairs]
     private $namedArrayWithFormattedDate;
 
-    public function __construct($namedArrayWithFormattedDate)
+    function __construct($namedArrayWithFormattedDate)
     {
         $this->namedArrayWithFormattedDate = $namedArrayWithFormattedDate;
     }

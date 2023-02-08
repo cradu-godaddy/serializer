@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures\DoctrinePHPCR;
 
 use Doctrine\Common\Collections\ArrayCollection;
@@ -17,7 +15,6 @@ use JMS\Serializer\Annotation\XmlRoot;
  * @PHPCRODM\Document
  * @XmlRoot("blog-post")
  */
-#[XmlRoot(name: 'blog-post')]
 class BlogPost
 {
     /**
@@ -29,7 +26,6 @@ class BlogPost
      * @PHPCRODM\Field(type="string")
      * @Groups({"comments","post"})
      */
-    #[Groups(groups: ['comments', 'post'])]
     private $title;
 
     /**
@@ -41,7 +37,6 @@ class BlogPost
      * @PHPCRODM\Field(type="date")
      * @XmlAttribute
      */
-    #[XmlAttribute]
     private $createdAt;
 
     /**
@@ -50,14 +45,11 @@ class BlogPost
      * This boolean to integer conversion is one of the few changes between this
      * and the standard BlogPost class. It's used to test the override behavior
      * of the DoctrineTypeDriver so notice it, but please don't change it.
+     *
      * @SerializedName("is_published")
      * @Groups({"post"})
      * @XmlAttribute
      */
-    #[Type(name: 'integer')]
-    #[SerializedName(name: 'is_published')]
-    #[Groups(groups: ['post'])]
-    #[XmlAttribute]
     private $published;
 
     /**
@@ -65,15 +57,12 @@ class BlogPost
      * @XmlList(inline=true, entry="comment")
      * @Groups({"comments"})
      */
-    #[XmlList(entry: 'comment', inline: true)]
-    #[Groups(groups: ['comments'])]
     private $comments;
 
     /**
      * @PHPCRODM\ReferenceOne(targetDocument="Author")
      * @Groups({"post"})
      */
-    #[Groups(groups: ['post'])]
     private $author;
 
     public function __construct($title, Author $author, \DateTime $createdAt)

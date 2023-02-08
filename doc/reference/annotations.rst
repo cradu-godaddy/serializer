@@ -1,5 +1,5 @@
 Annotations
-===========
+-----------
 
 @ExclusionPolicy
 ~~~~~~~~~~~~~~~~
@@ -18,12 +18,11 @@ that should be used for the class.
 
 @Exclude
 ~~~~~~~~
-This annotation can be defined on a property or a class to indicate that the property or class
-should not be serialized/unserialized. Works only in combination with NoneExclusionPolicy.
+This annotation can be defined on a property to indicate that the property should
+not be serialized/unserialized. Works only in combination with NoneExclusionPolicy.
 
-If the ``ExpressionLanguageExclusionStrategy`` exclusion strategy is enabled, it will
-be possible to use ``@Exclude(if="expression")`` to exclude dynamically a property
-or an object if used on class level.
+If the ``ExpressionLanguageExclusionStrategy`` exclusion strategy is enabled, will
+be possible to use ``@Exclude(if="expression")`` to exclude dynamically a property.
 
 @Expose
 ~~~~~~~
@@ -46,8 +45,8 @@ This annotation can be defined on a property to define the serialized name for a
 property. If this is not defined, the property will be translated from camel-case
 to a lower-cased underscored name, e.g. camelCase -> camel_case.
 
-Note that this annotation is not used when you're using any other naming
-strategy than the default configuration (which includes the
+Note that this annotation is not used when you're using any other naming 
+stategy than the default configuration (which includes the 
 ``SerializedNameAnnotationStrategy``). In order to re-enable the annotation, you
 will need to wrap your custom strategy with the ``SerializedNameAnnotationStrategy``.
 
@@ -143,11 +142,11 @@ be called to retrieve, or set the value of the given property:
             $this->name = $name;
         }
     }
-
+    
 .. note ::
 
     If you need only to serialize your data, you can avoid providing a setter by
-    setting the property as read-only using the ``@ReadOnlyProperty`` annotation.
+    setting the property as read-only using the ``@ReadOnly`` annotation.
 
 @AccessorOrder
 ~~~~~~~~~~~~~~
@@ -259,43 +258,25 @@ In this example:
 - ``firstName`` is exposed using the ``object.getFirstName()`` expression (``exp`` can contain any valid symfony expression).
 
 
-``@VirtualProperty()`` can also have an optional property ``name``, used to define the internal property name
-(for sorting proposes as example). When not specified, it defaults to the method name with the "get" prefix removed.
-
 .. note ::
 
     This only works for serialization and is completely ignored during deserialization.
-
-In PHP 8, due to the missing support for nested annotations, in the options array you need to pass an array with the class name and an array with the arguments for its constructor.
-
-.. code-block :: php
-
-    /**
-     * @Serializer\VirtualProperty(
-     *     "firstName",
-     *     exp="object.getFirstName()",
-     *     options={@Serializer\SerializedName("my_first_name")}
-     *  )
-     */
-    #[Serializer\VirtualProperty(name: "firstName", exp: "object.getFirstName()", options: [[Serializer\SerializedName::class, ["my_first_name"]]])]
-    class Author
-    {
-    ...
 
 @Inline
 ~~~~~~~
 This annotation can be defined on a property to indicate that the data of the property
 should be inlined.
 
-**Note**: AccessorOrder will be using the name of the property to determine the order.
+**Note**: This only works for serialization, the serializer will not be able to deserialize
+objects with this annotation. Also, AccessorOrder will be using the name of the property
+to determine the order.
 
-@ReadOnlyProperty
-~~~~~~~~~~~~~~~~~
+@ReadOnly
+~~~~~~~~~
 This annotation can be defined on a property to indicate that the data of the property
 is read only and cannot be set during deserialization.
 
-A property can be marked as non read only with ``@ReadOnlyProperty(false)`` annotation
-(useful when a class is marked as read only).
+A property can be marked as non read only with ``@ReadOnly(false)`` annotation (useful when a class is marked as read only).
 
 @PreSerialize
 ~~~~~~~~~~~~~
@@ -312,11 +293,30 @@ object has been serialized.
 This annotation can be defined on a method which is supposed to be called after
 the object has been deserialized.
 
+@HandlerCallback
+~~~~~~~~~~~~~~~~
+This annotation can be defined on a method if serialization/deserialization is handled
+by the object itself.
+
+.. code-block :: php
+
+    <?php
+
+    class Article
+    {
+        /**
+         * @HandlerCallback("xml", direction = "serialization")
+         */
+        public function serializeToXml(XmlSerializationVisitor $visitor)
+        {
+            // custom logic here
+        }
+    }
+
 @Discriminator
 ~~~~~~~~~~~~~~
 
 .. versionadded : 0.12
-
     @Discriminator was added
 
 This annotation allows serialization/deserialization of relations which are polymorphic, but
@@ -346,160 +346,65 @@ used when deserializing them.
 
 Available Types:
 
-+------------------------------------------------------------+--------------------------------------------------+
-| Type                                                       | Description                                      |
-+============================================================+==================================================+
-| boolean or bool                                            | Primitive boolean                                |
-+------------------------------------------------------------+--------------------------------------------------+
-| integer or int                                             | Primitive integer                                |
-+------------------------------------------------------------+--------------------------------------------------+
-| double or float                                            | Primitive double                                 |
-+------------------------------------------------------------+--------------------------------------------------+
-| double<2> or float<2>                                      | Primitive double with precision                  |
-+------------------------------------------------------------+--------------------------------------------------+
-| double<2, 'HALF_DOWN'> or float<2, 'HALF_DOWN'>            | Primitive double with precision and              |
-|                                                            | Rounding Mode.                                   |
-|                                                            | (HALF_UP, HALF_DOWN, HALF_EVEN HALF_ODD)         |
-+------------------------------------------------------------+--------------------------------------------------+
-| double<2, 'HALF_DOWN', 2> or float<2, 'HALF_DOWN', 2>      | Primitive double with precision,                 |
-| double<2, 'HALF_DOWN', 3> or float<2, 'HALF_DOWN', 3>      | Rounding Mode and decimals padding up to         |
-|                                                            | N digits. As example, the float ``1.23456`` when |
-|                                                            | specified as  ``double<2, 'HALF_DOWN', 5>`` will |
-|                                                            | be serialized as ``1.23000``.                    |
-|                                                            | NOTE: this is available only for the XML         |
-|                                                            | serializer.                                      |
-+------------------------------------------------------------+--------------------------------------------------+
-| string                                                     | Primitive string                                 |
-+------------------------------------------------------------+--------------------------------------------------+
-| array                                                      | An array with arbitrary keys, and values.        |
-+------------------------------------------------------------+--------------------------------------------------+
-| list                                                       | A list with arbitrary values.                    |
-+------------------------------------------------------------+--------------------------------------------------+
-| array<T>                                                   | An array of type T (T can be any available type).|
-|                                                            | Examples:                                        |
-|                                                            | array<string>, array<MyNamespace\MyObject>, etc. |
-+------------------------------------------------------------+--------------------------------------------------+
-| list<T>                                                    | A list of type T (T can be any available type).  |
-|                                                            | Examples:                                        |
-|                                                            | list<string>, list<MyNamespace\MyObject>, etc.   |
-+------------------------------------------------------------+--------------------------------------------------+
-| array<K, V>                                                | A map of keys of type K to values of type V.     |
-|                                                            | Examples: array<string, string>,                 |
-|                                                            | array<string, MyNamespace\MyObject>, etc.        |
-+------------------------------------------------------------+--------------------------------------------------+
-| enum<'Color'>                                              | Enum of type Color, use its case values          |
-|                                                            | for serialization and deserialization            |
-|                                                            | if the enum is a backed enum,                    |
-|                                                            | use its case names if it is not a backed enum.   |
-+------------------------------------------------------------+--------------------------------------------------+
-| enum<'Color', 'name'>                                      | Enum of type Color, use its case names           |
-|                                                            | (as string) for serialization                    |
-|                                                            | and deserialization.                             |
-+------------------------------------------------------------+--------------------------------------------------+
-| enum<'Color', 'value'>                                     | Backed Enum of type Color, use its case value    |
-|                                                            | for serialization and deserialization.           |
-+------------------------------------------------------------+--------------------------------------------------+
-| enum<'Color', 'value', 'integer'>                          | Backed Enum of type Color, use its case value    |
-|                                                            | (forced as integer) for serialization            |
-|                                                            | and deserialization.                             |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateTime                                                   | PHP's DateTime object (default format*/timezone) |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateTime<'format'>                                         | PHP's DateTime object (custom format/default     |
-|                                                            | timezone).                                       |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateTime<'format', 'zone'>                                 | PHP's DateTime object (custom format/timezone)   |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateTime<'format', 'zone', 'deserializeFormats'>           | PHP's DateTime object (custom format/timezone,   |
-|                                                            | deserialize format). If you do not want to       |
-|                                                            | specify a specific timezone, use an empty        |
-|                                                            | string (''). DeserializeFormats can either be a  |
-|                                                            | string or an array of string.                    |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateTimeImmutable                                          | PHP's DateTimeImmutable object (default format*/ |
-|                                                            | timezone).                                       |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateTimeImmutable<'format'>                                | PHP's DateTimeImmutable object (custom format/   |
-|                                                            | default timezone)                                |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateTimeImmutable<'format', 'zone'>                        | PHP's DateTimeImmutable object (custom format/   |
-|                                                            | timezone)                                        |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateTimeImmutable<'format', 'zone', 'deserializeFormats'>  | PHP's DateTimeImmutable object (custom format/   |
-|                                                            | timezone/deserialize format). If you do not want |
-|                                                            | to specify a specific timezone, use an empty     |
-|                                                            | string (''). DeserializeFormats can either be a  |
-|                                                            | string or an array of string.                    |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateTimeInterface                                          | PHP's DateTimeImmutable object (default format*/ |
-|                                                            | timezone).                                       |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateTimeInterface<'format'>                                | PHP's DateTimeImmutable object (custom format/   |
-|                                                            | default timezone)                                |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateTimeInterface<'format', 'zone'>                        | PHP's DateTimeImmutable object (custom format/   |
-|                                                            | timezone)                                        |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateTimeInterface<'format', 'zone', 'deserializeFormats'>  | PHP's DateTimeImmutable object (custom format/   |
-|                                                            | timezone/deserialize format). If you do not want |
-|                                                            | to specify a specific timezone, use an empty     |
-|                                                            | string (''). DeserializeFormats can either be a  |
-|                                                            | string or an array of string.                    |
-+------------------------------------------------------------+--------------------------------------------------+
-| DateInterval                                               | PHP's DateInterval object using ISO 8601 format  |
-+------------------------------------------------------------+--------------------------------------------------+
-| T                                                          | Where T is a fully qualified class name.         |
-+------------------------------------------------------------+--------------------------------------------------+
-| iterable                                                   | Similar to array. Will always be deserialized    |
-|                                                            | into array as implementation info is lost during |
-|                                                            | serialization.                                   |
-+------------------------------------------------------------+--------------------------------------------------+
-| iterable<T>                                                | Similar to array<T>. Will always be deserialized |
-|                                                            | into array as implementation info is lost during |
-|                                                            | serialization.                                   |
-+------------------------------------------------------------+--------------------------------------------------+
-| iterable<K, V>                                             | Similar to array<K, V>. Will always be           |
-|                                                            | deserialized into array as implementation info   |
-|                                                            | is lost during serialization.                    |
-+------------------------------------------------------------+--------------------------------------------------+
-| ArrayCollection<T>                                         | Similar to array<T>, but will be deserialized    |
-|                                                            | into Doctrine's ArrayCollection class.           |
-+------------------------------------------------------------+--------------------------------------------------+
-| ArrayCollection<K, V>                                      | Similar to array<K, V>, but will be deserialized |
-|                                                            | into Doctrine's ArrayCollection class.           |
-+------------------------------------------------------------+--------------------------------------------------+
-| Generator                                                  | Similar to array, but will be deserialized       |
-|                                                            | into Generator class.                            |
-+------------------------------------------------------------+--------------------------------------------------+
-| Generator<T>                                               | Similar to array<T>, but will be deserialized    |
-|                                                            | into Generator class.                            |
-+------------------------------------------------------------+--------------------------------------------------+
-| Generator<K, V>                                            | Similar to array<K, V>, but will be deserialized |
-|                                                            | into Generator class.                            |
-+------------------------------------------------------------+--------------------------------------------------+
-| ArrayIterator                                              | Similar to array, but will be deserialized       |
-|                                                            | into ArrayIterator class.                        |
-+------------------------------------------------------------+--------------------------------------------------+
-| ArrayIterator<T>                                           | Similar to array<T>, but will be deserialized    |
-|                                                            | into ArrayIterator class.                        |
-+------------------------------------------------------------+--------------------------------------------------+
-| ArrayIterator<K, V>                                        | Similar to array<K, V>, but will be deserialized |
-|                                                            | into ArrayIterator class.                        |
-+------------------------------------------------------------+--------------------------------------------------+
-| Iterator                                                   | Similar to array, but will be deserialized       |
-|                                                            | into ArrayIterator class.                        |
-+------------------------------------------------------------+--------------------------------------------------+
-| Iterator<T>                                                | Similar to array<T>, but will be deserialized    |
-|                                                            | into ArrayIterator class.                        |
-+------------------------------------------------------------+--------------------------------------------------+
-| Iterator<K, V>                                             | Similar to array<K, V>, but will be deserialized |
-|                                                            | into ArrayIterator class.                        |
-+------------------------------------------------------------+--------------------------------------------------+
++----------------------------------------------------------+--------------------------------------------------+
+| Type                                                     | Description                                      |
++==========================================================+==================================================+
+| boolean or bool                                          | Primitive boolean                                |
++----------------------------------------------------------+--------------------------------------------------+
+| integer or int                                           | Primitive integer                                |
++----------------------------------------------------------+--------------------------------------------------+
+| double or float                                          | Primitive double                                 |
++----------------------------------------------------------+--------------------------------------------------+
+| string                                                   | Primitive string                                 |
++----------------------------------------------------------+--------------------------------------------------+
+| array                                                    | An array with arbitrary keys, and values.        |
++----------------------------------------------------------+--------------------------------------------------+
+| array<T>                                                 | A list of type T (T can be any available type).  |
+|                                                          | Examples:                                        |
+|                                                          | array<string>, array<MyNamespace\MyObject>, etc. |
++----------------------------------------------------------+--------------------------------------------------+
+| array<K, V>                                              | A map of keys of type K to values of type V.     |
+|                                                          | Examples: array<string, string>,                 |
+|                                                          | array<string, MyNamespace\MyObject>, etc.        |
++----------------------------------------------------------+--------------------------------------------------+
+| DateTime                                                 | PHP's DateTime object (default format*/timezone) |
++----------------------------------------------------------+--------------------------------------------------+
+| DateTime<'format'>                                       | PHP's DateTime object (custom format/default     |
+|                                                          | timezone)                                        |
++----------------------------------------------------------+--------------------------------------------------+
+| DateTime<'format', 'zone'>                               | PHP's DateTime object (custom format/timezone)   |
++----------------------------------------------------------+--------------------------------------------------+
+| DateTime<'format', 'zone', 'deserializeFormat'>          | PHP's DateTime object (custom format/timezone,   |
+|                                                          | deserialize format). If you do not want to       |
+|                                                          | specify a specific timezone, use an empty        |
+|                                                          | string ('').                                     |
++----------------------------------------------------------+--------------------------------------------------+
+| DateTimeImmutable                                        | PHP's DateTimeImmutable object (default format*/ |
+|                                                          | timezone)                                        |
++----------------------------------------------------------+--------------------------------------------------+
+| DateTimeImmutable<'format'>                              | PHP's DateTimeImmutable object (custom format/   |
+|                                                          | default timezone)                                |
++----------------------------------------------------------+--------------------------------------------------+
+| DateTimeImmutable<'format', 'zone'>                      | PHP's DateTimeImmutable object (custom format/   |
+|                                                          | timezone)                                        |
++----------------------------------------------------------+--------------------------------------------------+
+| DateTimeImmutable<'format', 'zone', 'deserializeFormat'> | PHP's DateTimeImmutable object (custom format/   |
+|                                                          | timezone/deserialize format). If you do not want |
+|                                                          | to specify a specific timezone, use an empty     |
+|                                                          | string ('').                                     |
++----------------------------------------------------------+--------------------------------------------------+
+| DateInterval                                             | PHP's DateInterval object using ISO 8601 format  |
++----------------------------------------------------------+--------------------------------------------------+
+| T                                                        | Where T is a fully qualified class name.         |
++----------------------------------------------------------+--------------------------------------------------+
+| ArrayCollection<T>                                       | Similar to array<T>, but will be deserialized    |
+|                                                          | into Doctrine's ArrayCollection class.           |
++----------------------------------------------------------+--------------------------------------------------+
+| ArrayCollection<K, V>                                    | Similar to array<K, V>, but will be deserialized |
+|                                                          | into Doctrine's ArrayCollection class.           |
++----------------------------------------------------------+--------------------------------------------------+
 
-(*) If the standalone jms/serializer is used then default format is `\DateTime::ISO8601` (which is not compatible with ISO-8601 despite the name). For jms/serializer-bundle the default format is `\DateTime::ATOM` (the real ISO-8601 format) but it can be changed in `configuration`_.
-
-(**) The key type K for array-linke formats as ``array``. ``ArrayCollection``, ``iterable``, etc., is only used for deserialization,
-for serializaiton is treated as ``string``.
+(*) If the standalone jms/serializer is used then default format is `\DateTime::ISO8601` (which is not compatible with ISO-8601 despite the name). For jms/serializer-bundle the default format is `\DateTime::ATOM` (the real ISO-8601 format) but it can be changed in [configuration](https://jmsyst.com/bundles/JMSSerializerBundle/master/configuration#configuration-block-2-0).
 
 Examples:
 
@@ -539,11 +444,6 @@ Examples:
         private $endAt;
 
         /**
-         * @Type("DateTime<'Y-m-d', '', ['Y-m-d', 'Y/m/d']>")
-         */
-        private $publishedAt;
-
-        /**
          * @Type("DateTimeImmutable")
          */
         private $createdAt;
@@ -552,11 +452,6 @@ Examples:
          * @Type("DateTimeImmutable<'Y-m-d'>")
          */
         private $updatedAt;
-
-        /**
-         * @Type("DateTimeImmutable<'Y-m-d', '', ['Y-m-d', 'Y/m/d']>")
-         */
-        private $deletedAt;
 
         /**
          * @Type("boolean")
@@ -568,8 +463,6 @@ Examples:
          */
         private $keyValueStore;
     }
-
-.. _configuration: https://jmsyst.com/bundles/JMSSerializerBundle/master/configuration#configuration-block-2-0
 
 @XmlRoot
 ~~~~~~~~
@@ -646,7 +539,6 @@ Available Options:
 +-------------------------------------+--------------------------------------------------+
 
 Example for "attribute":
-
 .. code-block :: php
 
     <?php
@@ -671,7 +563,6 @@ Resulting XML:
 Example for "cdata":
 
 .. code-block :: php
-
     <?php
 
     use JMS\Serializer\Annotation\Discriminator;
@@ -744,30 +635,21 @@ keys of the array are not important.
         /**
          * @XmlList(inline = true, entry = "comment")
          */
-        private $comments = [];
-
-        public function __construct(array $comments)
-        {
-            $this->comments = $comments;
-        }
+        private $comments = array(
+            new Comment('Foo'),
+            new Comment('Bar'),
+        );
     }
 
     class Comment
     {
         private $text;
 
-        public function __construct(string $text)
+        public function __construct($text)
         {
             $this->text = $text;
         }
     }
-
-    // usage
-    $post = new Post(
-        new Comment('Foo'),
-        new Comment('Bar'),
-    );
-    $xml = $serializer->serialize($post, 'xml');
 
 Resulting XML:
 
@@ -892,73 +774,3 @@ Resulting XML:
             <full_name><![CDATA[Foo Bar]]></full_name>
         </atom:author>
     </blog>
-
-
-PHP 8 support
-~~~~~~~~~~~~~
-
-JMS serializer now supports PHP 8 attributes, with a few caveats:
-- Due to the missing support for nested annotations, the syntax for a few annotations has changed
-(see the ``VirtualProperty`` ``options`` syntax here below)
-- There is an edge case when setting this exact serialization group ``#[Groups(['value' => 'any value here'])]``.
-(when there is only one item in th serialization groups array and has as key ``value`` the attribute will not work as expected,
-please use the alternative syntax ``#[Groups(groups: ['value' => 'any value here'])]`` that works with no issues),
-
-Converting your annotations to attributes
------------------------------------------
-
-Example:
-
-.. code-block :: php
-
-    /**
-     * @VirtualProperty(
-     *     "classlow",
-     *     exp="object.getVirtualValue(1)",
-     *     options={@Until("8")}
-     * )
-     * @VirtualProperty(
-     *     "classhigh",
-     *     exp="object.getVirtualValue(8)",
-     *     options={@Since("6")}
-     * )
-     */
-    #[VirtualProperty('classlow', exp: 'object.getVirtualValue(1)', options: [[Until::class, ['8']]])]
-    #[VirtualProperty('classhigh', exp: 'object.getVirtualValue(8)', options: [[Since::class, ['6']]])]
-    class ObjectWithVersionedVirtualProperties
-    {
-        /**
-         * @Groups({"versions"})
-         * @VirtualProperty
-         * @SerializedName("low")
-         * @Until("8")
-         */
-        #[Groups(['versions'])]
-        #[VirtualProperty]
-        #[SerializedName('low')]
-        #[Until('8')]
-        public function getVirtualLowValue()
-        {
-            return 1;
-        }
-    ...
-
-Enum support
-~~~~~~~~~~~~
-
-Enum support is disabled by default, to enable it run:
-
-.. code-block :: php
-
-    $builder = SerializerBuilder::create();
-    $builder->enableEnumSupport();
-
-    $serializer = $builder->build();
-
-
-With the enum support enabled, enums are automatically detected using typed properties typehints.
-When typed properties are no available (virtual properties as example), it is necessary to explicitly typehint
-the underlying type using the ``@Type`` annotation.
-
-- If the enum is a ``BackedEnum``, the case value will be used for serialization and deserialization by default;
-- If the enum is not a ``BackedEnum``, the case name will be used for serialization and deserialization by default;

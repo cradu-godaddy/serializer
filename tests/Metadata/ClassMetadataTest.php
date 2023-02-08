@@ -1,23 +1,20 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Metadata;
 
 use JMS\Serializer\Metadata\ClassMetadata;
 use JMS\Serializer\Metadata\PropertyMetadata;
-use PHPUnit\Framework\TestCase;
 
-class ClassMetadataTest extends TestCase
+class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 {
     public function getAccessOrderCases()
     {
         return [
-            [['b', 'a'], ['b', 'a']],
-            [['a', 'b'], ['a', 'b']],
-            [['b'], ['b', 'a']],
-            [['a'], ['a', 'b']],
-            [['foo', 'bar'], ['b', 'a']],
+            [array('b', 'a'), array('b', 'a')],
+            [array('a', 'b'), array('a', 'b')],
+            [array('b'), array('b', 'a')],
+            [array('a'), array('a', 'b')],
+            [array('foo', 'bar'), array('b', 'a')],
         ];
     }
 
@@ -25,19 +22,7 @@ class ClassMetadataTest extends TestCase
     {
         $meta = new PropertyMetadata('JMS\Serializer\Tests\Metadata\PropertyMetadataOrder', 'b');
         $restoredMeta = unserialize(serialize($meta));
-        self::assertEquals($meta, $restoredMeta);
-    }
-
-    public function testSerializationClass()
-    {
-        $meta = new ClassMetadata('JMS\Serializer\Tests\Metadata\PropertyMetadataOrder');
-        $meta->xmlRootPrefix = 'foo';
-        $meta->xmlDiscriminatorCData = 'foo';
-        $meta->xmlDiscriminatorAttribute = 'foo';
-        $meta->xmlRootName = 'foo';
-
-        $restoredMeta = unserialize(serialize($meta));
-        self::assertEquals($meta, $restoredMeta);
+        $this->assertEquals($meta, $restoredMeta);
     }
 
     /**
@@ -48,10 +33,10 @@ class ClassMetadataTest extends TestCase
         $metadata = new ClassMetadata('JMS\Serializer\Tests\Metadata\PropertyMetadataOrder');
         $metadata->addPropertyMetadata(new PropertyMetadata('JMS\Serializer\Tests\Metadata\PropertyMetadataOrder', 'b'));
         $metadata->addPropertyMetadata(new PropertyMetadata('JMS\Serializer\Tests\Metadata\PropertyMetadataOrder', 'a'));
-        self::assertEquals(['b', 'a'], array_keys($metadata->propertyMetadata));
+        $this->assertEquals(array('b', 'a'), array_keys($metadata->propertyMetadata));
 
         $metadata->setAccessorOrder(ClassMetadata::ACCESSOR_ORDER_CUSTOM, $order);
-        self::assertEquals($expected, array_keys($metadata->propertyMetadata));
+        $this->assertEquals($expected, array_keys($metadata->propertyMetadata));
     }
 
     public function testSetAccessorOrderAlphabetical()
@@ -59,10 +44,10 @@ class ClassMetadataTest extends TestCase
         $metadata = new ClassMetadata('JMS\Serializer\Tests\Metadata\PropertyMetadataOrder');
         $metadata->addPropertyMetadata(new PropertyMetadata('JMS\Serializer\Tests\Metadata\PropertyMetadataOrder', 'b'));
         $metadata->addPropertyMetadata(new PropertyMetadata('JMS\Serializer\Tests\Metadata\PropertyMetadataOrder', 'a'));
-        self::assertEquals(['b', 'a'], array_keys($metadata->propertyMetadata));
+        $this->assertEquals(array('b', 'a'), array_keys($metadata->propertyMetadata));
 
         $metadata->setAccessorOrder(ClassMetadata::ACCESSOR_ORDER_ALPHABETICAL);
-        self::assertEquals(['a', 'b'], array_keys($metadata->propertyMetadata));
+        $this->assertEquals(array('a', 'b'), array_keys($metadata->propertyMetadata));
     }
 
     /**
@@ -75,8 +60,12 @@ class ClassMetadataTest extends TestCase
         $metadata = new PropertyMetadata(get_class($object), $property);
         $metadata->setAccessor(PropertyMetadata::ACCESS_TYPE_PUBLIC_METHOD, $getterInit, $setterInit);
 
-        self::assertEquals($getterName, $metadata->getter);
-        self::assertEquals($setterName, $metadata->setter);
+        $this->assertEquals($getterName, $metadata->getter);
+        $this->assertEquals($setterName, $metadata->setter);
+
+        $metadata->setValue($object, 'x');
+
+        $this->assertEquals(sprintf('%1$s:%1$s:x', strtoupper($property)), $metadata->getValue($object));
     }
 
     /**
@@ -84,8 +73,7 @@ class ClassMetadataTest extends TestCase
      */
     public function testAccessorTypePublicMethodException($getter, $setter, $message)
     {
-        $this->expectException('\JMS\Serializer\Exception\InvalidMetadataException');
-        $this->expectExceptionMessage($message);
+        $this->setExpectedException('\JMS\Serializer\Exception\RuntimeException', $message);
 
         $object = new PropertyMetadataPublicMethod();
 
@@ -95,21 +83,21 @@ class ClassMetadataTest extends TestCase
 
     public function providerPublicMethodData()
     {
-        return [
-            ['a', null, null, 'geta', 'seta'],
-            ['b', null, null, 'isb', 'setb'],
-            ['c', null, null, 'hasc', 'setc'],
-            ['d', 'fetchd', 'saved', 'fetchd', 'saved'],
-        ];
+        return array(
+            array('a', null, null, 'geta', 'seta'),
+            array('b', null, null, 'isb', 'setb'),
+            array('c', null, null, 'hasc', 'setc'),
+            array('d', 'fetchd', 'saved', 'fetchd', 'saved')
+        );
     }
 
     public function providerPublicMethodException()
     {
-        return [
-            [null, null, 'a public getE method, nor a public isE method, nor a public hasE method in class'],
-            [null, 'setx', 'a public getE method, nor a public isE method, nor a public hasE method in class'],
-            ['getx', null, 'no public setE method in class'],
-        ];
+        return array(
+            array(null, null, 'a public getE method, nor a public isE method, nor a public hasE method in class'),
+            array(null, 'setx', 'a public getE method, nor a public isE method, nor a public hasE method in class'),
+            array('getx', null, 'no public setE method in class'),
+        );
     }
 }
 

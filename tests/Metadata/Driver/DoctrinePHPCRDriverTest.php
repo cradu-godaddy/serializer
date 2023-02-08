@@ -1,40 +1,29 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Metadata\Driver;
 
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\ODM\PHPCR\Configuration;
 use Doctrine\ODM\PHPCR\DocumentManager;
 use Doctrine\ODM\PHPCR\Mapping\Driver\AnnotationDriver as DoctrinePHPCRDriver;
-use Doctrine\Persistence\ManagerRegistry;
 use JMS\Serializer\Metadata\Driver\AnnotationDriver;
 use JMS\Serializer\Metadata\Driver\DoctrinePHPCRTypeDriver;
-use JMS\Serializer\Naming\IdenticalPropertyNamingStrategy;
-use PHPUnit\Framework\TestCase;
 
-class DoctrinePHPCRDriverTest extends TestCase
+class DoctrinePHPCRDriverTest extends \PHPUnit_Framework_TestCase
 {
-    protected function setUp(): void
-    {
-        if (!class_exists(Configuration::class)) {
-            $this->markTestSkipped('PHPCR not available');
-        }
-    }
-
     public function getMetadata()
     {
         $refClass = new \ReflectionClass('JMS\Serializer\Tests\Fixtures\DoctrinePHPCR\BlogPost');
+        $metadata = $this->getDoctrinePHPCRDriver()->loadMetadataForClass($refClass);
 
-        return $this->getDoctrinePHPCRDriver()->loadMetadataForClass($refClass);
+        return $metadata;
     }
 
     public function testTypelessPropertyIsGivenTypeFromDoctrineMetadata()
     {
         $metadata = $this->getMetadata();
-        self::assertEquals(
-            ['name' => 'DateTime', 'params' => []],
+        $this->assertEquals(
+            array('name' => 'DateTime', 'params' => array()),
             $metadata->propertyMetadata['createdAt']->type
         );
     }
@@ -42,8 +31,8 @@ class DoctrinePHPCRDriverTest extends TestCase
     public function testSingleValuedAssociationIsProperlyHinted()
     {
         $metadata = $this->getMetadata();
-        self::assertEquals(
-            ['name' => 'JMS\Serializer\Tests\Fixtures\DoctrinePHPCR\Author', 'params' => []],
+        $this->assertEquals(
+            array('name' => 'JMS\Serializer\Tests\Fixtures\DoctrinePHPCR\Author', 'params' => array()),
             $metadata->propertyMetadata['author']->type
         );
     }
@@ -52,13 +41,10 @@ class DoctrinePHPCRDriverTest extends TestCase
     {
         $metadata = $this->getMetadata();
 
-        self::assertEquals(
-            [
-                'name' => 'ArrayCollection',
-                'params' => [
-                    ['name' => 'JMS\Serializer\Tests\Fixtures\DoctrinePHPCR\Comment', 'params' => []],
-                ],
-            ],
+        $this->assertEquals(
+            array('name' => 'ArrayCollection', 'params' => array(
+                array('name' => 'JMS\Serializer\Tests\Fixtures\DoctrinePHPCR\Comment', 'params' => array()))
+            ),
             $metadata->propertyMetadata['comments']->type
         );
     }
@@ -68,8 +54,8 @@ class DoctrinePHPCRDriverTest extends TestCase
         $metadata = $this->getMetadata();
 
         // This would be guessed as boolean but we've overridden it to integer
-        self::assertEquals(
-            ['name' => 'integer', 'params' => []],
+        $this->assertEquals(
+            array('name' => 'integer', 'params' => array()),
             $metadata->propertyMetadata['published']->type
         );
     }
@@ -88,7 +74,7 @@ class DoctrinePHPCRDriverTest extends TestCase
             $plainMetadata->createdAt = $doctrineMetadata->createdAt;
         }
 
-        self::assertEquals($plainMetadata, $doctrineMetadata);
+        $this->assertEquals($plainMetadata, $doctrineMetadata);
     }
 
     protected function getDocumentManager()
@@ -107,12 +93,12 @@ class DoctrinePHPCRDriverTest extends TestCase
 
     public function getAnnotationDriver()
     {
-        return new AnnotationDriver(new AnnotationReader(), new IdenticalPropertyNamingStrategy());
+        return new AnnotationDriver(new AnnotationReader());
     }
 
     protected function getDoctrinePHPCRDriver()
     {
-        $registry = $this->getMockBuilder(ManagerRegistry::class)->getMock();
+        $registry = $this->getMockBuilder('Doctrine\Common\Persistence\ManagerRegistry')->getMock();
         $registry->expects($this->atLeastOnce())
             ->method('getManagerForClass')
             ->will($this->returnValue($this->getDocumentManager()));

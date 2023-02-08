@@ -1,41 +1,32 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Serializer;
 
-use JMS\Serializer\Exception\LogicException;
-use JMS\Serializer\GraphNavigator;
 use JMS\Serializer\Metadata\ClassMetadata;
 use JMS\Serializer\Metadata\PropertyMetadata;
 use JMS\Serializer\SerializationContext;
 use JMS\Serializer\SerializerBuilder;
-use JMS\Serializer\Tests\Fixtures\Author;
-use JMS\Serializer\Tests\Fixtures\BlogPost;
 use JMS\Serializer\Tests\Fixtures\InlineChild;
 use JMS\Serializer\Tests\Fixtures\Node;
-use JMS\Serializer\Tests\Fixtures\Publisher;
-use JMS\Serializer\Tests\Fixtures\VersionedObject;
-use JMS\Serializer\VisitorInterface;
-use Metadata\MetadataFactoryInterface;
-use PHPUnit\Framework\TestCase;
 
-class ContextTest extends TestCase
+class ContextTest extends \PHPUnit_Framework_TestCase
 {
     public function testSerializationContextPathAndDepth()
     {
-        $object = new Node([
+        $object = new Node(array(
             new Node(),
-            new Node([new Node()]),
-        ]);
-        $objects = [$object, $object->children[0], $object->children[1], $object->children[1]->children[0]];
+            new Node(array(
+                new Node()
+            )),
+        ));
+        $objects = array($object, $object->children[0], $object->children[1], $object->children[1]->children[0]);
 
         $self = $this;
 
         $exclusionStrategy = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock();
         $exclusionStrategy->expects($this->any())
             ->method('shouldSkipClass')
-            ->with($this->anything(), $this->callback(static function (SerializationContext $context) use ($self, $objects) {
+            ->with($this->anything(), $this->callback(function (SerializationContext $context) use ($self, $objects) {
                 $expectedDepth = $expectedPath = null;
 
                 if ($context->getObject() === $objects[0]) {
@@ -61,7 +52,7 @@ class ContextTest extends TestCase
 
         $exclusionStrategy->expects($this->any())
             ->method('shouldSkipProperty')
-            ->with($this->anything(), $this->callback(static function (SerializationContext $context) use ($self, $objects) {
+            ->with($this->anything(), $this->callback(function (SerializationContext $context) use ($self, $objects) {
                 $expectedDepth = $expectedPath = null;
 
                 if ($context->getObject() === $objects[0]) {
@@ -92,15 +83,15 @@ class ContextTest extends TestCase
 
     public function testSerializationMetadataStack()
     {
-        $object = new Node([
+        $object = new Node(array(
             $child = new InlineChild(),
-        ]);
+        ));
         $self = $this;
 
         $exclusionStrategy = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock();
         $exclusionStrategy->expects($this->any())
             ->method('shouldSkipClass')
-            ->will($this->returnCallback(static function (ClassMetadata $classMetadata, SerializationContext $context) use ($self, $object, $child) {
+            ->will($this->returnCallback(function (ClassMetadata $classMetadata, SerializationContext $context) use ($self, $object, $child) {
                 $stack = $context->getMetadataStack();
 
                 if ($object === $context->getObject()) {
@@ -118,10 +109,10 @@ class ContextTest extends TestCase
 
         $exclusionStrategy->expects($this->any())
             ->method('shouldSkipProperty')
-            ->will($this->returnCallback(static function (PropertyMetadata $propertyMetadata, SerializationContext $context) use ($self) {
+            ->will($this->returnCallback(function (PropertyMetadata $propertyMetadata, SerializationContext $context) use ($self, $object, $child) {
                 $stack = $context->getMetadataStack();
 
-                if ('JMS\Serializer\Tests\Fixtures\Node' === $propertyMetadata->class && 'children' === $propertyMetadata->name) {
+                if ('JMS\Serializer\Tests\Fixtures\Node' === $propertyMetadata->class && $propertyMetadata->name === 'children') {
                     $self->assertEquals(1, $stack->count());
                     $self->assertEquals('JMS\Serializer\Tests\Fixtures\Node', $stack[0]->name);
                 }
@@ -142,12 +133,12 @@ class ContextTest extends TestCase
 
     public function getScalars()
     {
-        return [
-            ['string'],
-            [5],
-            [5.5],
-            [[]],
-        ];
+        return array(
+            array("string"),
+            array(5),
+            array(5.5),
+            array(array())
+        );
     }
 
     /**
@@ -158,7 +149,7 @@ class ContextTest extends TestCase
         $context = SerializationContext::create();
 
         $context->startVisiting($scalar);
-        self::assertFalse($context->isVisiting($scalar));
+        $this->assertFalse($context->isVisiting($scalar));
         $context->stopVisiting($scalar);
     }
 
@@ -166,72 +157,29 @@ class ContextTest extends TestCase
     {
         $context = SerializationContext::create();
         $context->setInitialType('foo');
-        self::assertEquals('foo', $context->getInitialType());
-        self::assertEquals('foo', $context->getAttribute('initial_type'));
+        $this->assertEquals('foo', $context->getInitialType());
+        $this->assertEquals('foo', $context->attributes->get('initial_type')->get());
 
         $context = SerializationContext::create();
-        $context->setAttribute('initial_type', 'foo');
-        self::assertEquals('foo', $context->getInitialType());
-    }
-
-    public function testMultipleCallsOnGroupsDoNotCreateMultipleExclusionStrategies()
-    {
-        $serializer = SerializerBuilder::create()->build();
-
-        $context = SerializationContext::create();
-        $context->setGroups(['foo', 'Default']);
-        $context->setGroups('post');
-
-        $object = new BlogPost('serializer', new Author('me'), new \DateTime(), new Publisher('php'));
-        $serialized = $serializer->serialize($object, 'json', $context);
-
-        $data = json_decode($serialized, true);
-
-        self::assertArrayHasKey('id', $data);
-        self::assertArrayNotHasKey('created_at', $data);
-    }
-
-    public function testMultipleCallsOnVersionDoNotCreateMultipleExclusionStrategies()
-    {
-        $serializer = SerializerBuilder::create()->build();
-
-        $context = SerializationContext::create();
-        $context->setVersion('1.0.1');
-        $context->setVersion('1.0.0');
-
-        $object = new VersionedObject('a', 'b');
-        $serialized = $serializer->serialize($object, 'json', $context);
-
-        $data = json_decode($serialized, true);
-
-        self::assertEquals('a', $data['name']);
+        $context->attributes->set('initial_type', 'foo');
+        $this->assertEquals('foo', $context->getInitialType());
     }
 
     public function testSerializeNullOption()
     {
         $context = SerializationContext::create();
-        self::assertFalse($context->shouldSerializeNull());
+        $this->assertNull($context->shouldSerializeNull());
 
         $context->setSerializeNull(false);
-        self::assertFalse($context->shouldSerializeNull());
+        $this->assertFalse($context->shouldSerializeNull());
 
         $context->setSerializeNull(true);
-        self::assertTrue($context->shouldSerializeNull());
-    }
+        $this->assertTrue($context->shouldSerializeNull());
 
-    public function testContextBecomesImmutableWhenStartingProcess()
-    {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('This context was already initialized and is immutable; you cannot modify it anymore.');
+        $context->setSerializeNull("foo");
+        $this->assertTrue($context->shouldSerializeNull());
 
-        $visitor = $this->createMock(VisitorInterface::class);
-        $navigator = $this->createMock(GraphNavigator::class);
-        $metadataFactory = $this->createMock(MetadataFactoryInterface::class);
-
-        $context = SerializationContext::create();
-
-        $context->initialize('json', $visitor, $navigator, $metadataFactory);
-
-        $context->setSerializeNull(false);
+        $context->setSerializeNull("0");
+        $this->assertFalse($context->shouldSerializeNull());
     }
 }

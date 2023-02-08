@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Fixtures;
 
 use JMS\Serializer\Annotation\SerializedName;
@@ -13,8 +11,6 @@ class Author
      * @Type("string")
      * @SerializedName("full_name")
      */
-    #[Type(name: 'string')]
-    #[SerializedName(name: 'full_name')]
     private $name;
 
     public function __construct($name)

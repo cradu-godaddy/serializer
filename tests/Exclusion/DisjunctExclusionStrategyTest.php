@@ -1,26 +1,23 @@
 <?php
 
-declare(strict_types=1);
-
 namespace JMS\Serializer\Tests\Exclusion;
 
 use JMS\Serializer\Exclusion\DisjunctExclusionStrategy;
 use JMS\Serializer\Metadata\ClassMetadata;
 use JMS\Serializer\Metadata\StaticPropertyMetadata;
 use JMS\Serializer\SerializationContext;
-use PHPUnit\Framework\TestCase;
 
-class DisjunctExclusionStrategyTest extends TestCase
+class DisjunctExclusionStrategyTest extends \PHPUnit_Framework_TestCase
 {
     public function testShouldSkipClassShortCircuiting()
     {
         $metadata = new ClassMetadata('stdClass');
         $context = SerializationContext::create();
 
-        $strat = new DisjunctExclusionStrategy([
+        $strat = new DisjunctExclusionStrategy(array(
             $first = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock(),
             $last = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock(),
-        ]);
+        ));
 
         $first->expects($this->once())
             ->method('shouldSkipClass')
@@ -30,7 +27,7 @@ class DisjunctExclusionStrategyTest extends TestCase
         $last->expects($this->never())
             ->method('shouldSkipClass');
 
-        self::assertTrue($strat->shouldSkipClass($metadata, $context));
+        $this->assertTrue($strat->shouldSkipClass($metadata, $context));
     }
 
     public function testShouldSkipClassDisjunctBehavior()
@@ -38,10 +35,10 @@ class DisjunctExclusionStrategyTest extends TestCase
         $metadata = new ClassMetadata('stdClass');
         $context = SerializationContext::create();
 
-        $strat = new DisjunctExclusionStrategy([
+        $strat = new DisjunctExclusionStrategy(array(
             $first = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock(),
             $last = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock(),
-        ]);
+        ));
 
         $first->expects($this->once())
             ->method('shouldSkipClass')
@@ -53,7 +50,7 @@ class DisjunctExclusionStrategyTest extends TestCase
             ->with($metadata, $context)
             ->will($this->returnValue(true));
 
-        self::assertTrue($strat->shouldSkipClass($metadata, $context));
+        $this->assertTrue($strat->shouldSkipClass($metadata, $context));
     }
 
     public function testShouldSkipClassReturnsFalseIfNoPredicateMatched()
@@ -61,10 +58,10 @@ class DisjunctExclusionStrategyTest extends TestCase
         $metadata = new ClassMetadata('stdClass');
         $context = SerializationContext::create();
 
-        $strat = new DisjunctExclusionStrategy([
+        $strat = new DisjunctExclusionStrategy(array(
             $first = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock(),
             $last = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock(),
-        ]);
+        ));
 
         $first->expects($this->once())
             ->method('shouldSkipClass')
@@ -76,7 +73,7 @@ class DisjunctExclusionStrategyTest extends TestCase
             ->with($metadata, $context)
             ->will($this->returnValue(false));
 
-        self::assertFalse($strat->shouldSkipClass($metadata, $context));
+        $this->assertFalse($strat->shouldSkipClass($metadata, $context));
     }
 
     public function testShouldSkipPropertyShortCircuiting()
@@ -84,10 +81,10 @@ class DisjunctExclusionStrategyTest extends TestCase
         $metadata = new StaticPropertyMetadata('stdClass', 'foo', 'bar');
         $context = SerializationContext::create();
 
-        $strat = new DisjunctExclusionStrategy([
+        $strat = new DisjunctExclusionStrategy(array(
             $first = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock(),
             $last = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock(),
-        ]);
+        ));
 
         $first->expects($this->once())
             ->method('shouldSkipProperty')
@@ -97,7 +94,7 @@ class DisjunctExclusionStrategyTest extends TestCase
         $last->expects($this->never())
             ->method('shouldSkipProperty');
 
-        self::assertTrue($strat->shouldSkipProperty($metadata, $context));
+        $this->assertTrue($strat->shouldSkipProperty($metadata, $context));
     }
 
     public function testShouldSkipPropertyDisjunct()
@@ -105,10 +102,10 @@ class DisjunctExclusionStrategyTest extends TestCase
         $metadata = new StaticPropertyMetadata('stdClass', 'foo', 'bar');
         $context = SerializationContext::create();
 
-        $strat = new DisjunctExclusionStrategy([
+        $strat = new DisjunctExclusionStrategy(array(
             $first = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock(),
             $last = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock(),
-        ]);
+        ));
 
         $first->expects($this->once())
             ->method('shouldSkipProperty')
@@ -120,7 +117,7 @@ class DisjunctExclusionStrategyTest extends TestCase
             ->with($metadata, $context)
             ->will($this->returnValue(true));
 
-        self::assertTrue($strat->shouldSkipProperty($metadata, $context));
+        $this->assertTrue($strat->shouldSkipProperty($metadata, $context));
     }
 
     public function testShouldSkipPropertyReturnsFalseIfNoPredicateMatches()
@@ -128,10 +125,10 @@ class DisjunctExclusionStrategyTest extends TestCase
         $metadata = new StaticPropertyMetadata('stdClass', 'foo', 'bar');
         $context = SerializationContext::create();
 
-        $strat = new DisjunctExclusionStrategy([
+        $strat = new DisjunctExclusionStrategy(array(
             $first = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock(),
             $last = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock(),
-        ]);
+        ));
 
         $first->expects($this->once())
             ->method('shouldSkipProperty')
@@ -143,6 +140,6 @@ class DisjunctExclusionStrategyTest extends TestCase
             ->with($metadata, $context)
             ->will($this->returnValue(false));
 
-        self::assertFalse($strat->shouldSkipProperty($metadata, $context));
+        $this->assertFalse($strat->shouldSkipProperty($metadata, $context));
     }
 }
